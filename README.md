@@ -1,198 +1,193 @@
-# Sketch2Shape AI: Sketch Preprocessing & Backend
+# Sketch2Shape AI: Sketch Understanding & 3D Reconstruction
 
-Sketch2Shape AI is a hackathon system designed to convert hand-drawn 2D sketches into high-fidelity 3D models using pretrained image-to-3D reconstruction backbones (e.g., **InstantMesh**, Zero123++, TripoSR).
-
-This module delivers a robust, deterministic image preprocessing pipeline built using **Python, OpenCV, and Pillow** that transforms noisy, multi-format user sketches into clean, centered, aspect-ratio-preserved, model-ready images without distorting geometry or eliminating delicate strokes.
+Sketch2Shape AI is an end-to-end hackathon system that converts hand-drawn 2D sketches into 3D models using **Llama 3.2 Vision** for deep semantic understanding and **InstantMesh** for sparse-view 3D mesh reconstruction.
 
 ---
 
-## 1. Project Structure
+## 1. Project Architecture
 
 ```text
 ML-hackathon/
 ├── backend/
 │   ├── __init__.py
-│   ├── config.py              # Configuration dataclasses (PreprocessingConfig, AppConfig)
-│   ├── preprocessing.py       # Core OpenCV/Pillow sketch preprocessing pipeline
+│   ├── config.py              # Configuration dataclasses (PreprocessingConfig, LlamaVisionConfig, AppConfig)
+│   ├── preprocessing.py       # OpenCV/Pillow sketch preprocessing (resizing, padding, CLAHE, bilateral filtering)
+│   ├── vision_analysis.py     # Llama 3.2 Vision semantic analysis with resilient OpenCV heuristic fallback
 │   ├── reconstruction.py      # Reconstruction engine interface (InstantMesh adapter)
-│   └── main.py                # FastAPI backend endpoints (/api/preprocess, /api/reconstruct)
+│   └── main.py                # FastAPI backend endpoints (/api/preprocess, /api/analyze-sketch, /api/reconstruct)
+├── frontend/
+│   ├── index.html             # Vite entry point
+│   ├── package.json           # React frontend package definition
+│   ├── vite.config.js         # Vite configuration with API proxying
+│   ├── dist/                  # Built standalone React SPA (served directly by FastAPI at http://localhost:8000)
+│   └── src/
+│       ├── App.jsx            # Interactive drawing canvas, sample sketches, vision cards, and 3D mesh viewer
+│       ├── main.jsx           # React DOM root
+│       └── index.css          # Tailwind / modern styling
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py            # Test image fixtures for 10 distinct edge-case categories
-│   └── test_preprocessing.py  # Comprehensive pytest suite (16 tests, 100% pass)
-├── requirements.txt           # Project dependencies
+│   ├── conftest.py            # Test image fixtures for 10 sketch categories
+│   ├── test_preprocessing.py  # 16 unit and functional tests for OpenCV preprocessing
+│   └── test_vision.py         # 9 tests for Llama 3.2 Vision understanding and API routes
+├── requirements.txt           # Python backend dependencies
 └── README.md
 ```
 
 ---
 
-## 2. Preprocessing Pipeline Architecture
-
-The preprocessing pipeline follows 9 explicit stages:
+## 2. End-to-End Pipeline
 
 ```text
-Uploaded Sketch (PNG / JPEG / WebP / BMP)
-          ↓
-[1] Safe File Loading & Alpha Blending (Pillow)
-    - Composites RGBA/LA/P transparency over solid white canvas
-    - Prevents black/magenta transparent halo artifacts
-          ↓
-[2] Polarity Normalization (OpenCV / NumPy)
-    - Detects chalkboard / dark canvas inputs
-    - Automatically inverts white-on-black strokes to dark-on-white
-          ↓
-[3] Aspect-Ratio Preserving Resize & Safety Margin Padding (OpenCV)
-    - Calculates uniform scale factor to prevent geometric distortion
-    - Uses cv2.INTER_AREA for downscaling (preserves thin strokes)
-    - Centers sketch on square canvas (e.g. 320x320) with 10% safety margin
-          ↓
-[4] Conservative Contrast Enhancement (OpenCV CLAHE)
-    - Converts RGB → CIELAB color space
-    - Applies CLAHE (clipLimit=1.5, grid=8x8) only to Lightness (L) channel
-    - Enhances faint pencil strokes without color shifts or blown highlights
-          ↓
-[5] Edge-Preserving Noise Reduction (OpenCV Bilateral Filter)
-    - Applies cv2.bilateralFilter (d=5, sigmaColor=25, sigmaSpace=25)
-    - Smooths paper grain and background noise while preserving sharp contours
-          ↓
-[6] Color Mode Format & Compatibility
-    - Output formatted as 3-channel RGB (uint8 [0, 255])
-          ↓
-[7] Quality & Specification Validation
-    - Verifies exact target dimensions, channels, pixel variance, and data integrity
-          ↓
-[8] Atomic Disk Persistence
-    - Saves model-ready image to destination path without mutating original sketch
-          ↓
-[9] Debug Intermediate Stage Export (Optional)
-    - Exports original, resized, contrast, denoised, and final stages for inspection
+User Sketch (Interactive Canvas or Upload: PNG/JPEG/WebP)
+                      ↓
+[1] OpenCV Preprocessing Module
+    - Alpha compositing over solid white canvas (eliminates black halo borders)
+    - Background polarity detection & auto-inversion (supports chalkboard sketches)
+    - Aspect-ratio preserving uniform scaling & square canvas padding (320x320)
+    - Conservative CLAHE on CIELAB Lightness channel (enhances faint lines)
+    - Edge-preserving Bilateral Filter (removes paper grain while keeping thin lines crisp)
+                      ↓
+[2] Llama 3.2 Vision Semantic Understanding
+    - Encodes preprocessed image to base64
+    - Analyzes:
+      * Primary object and category
+      * Visible components (strictly distinguishing observed strokes from inferred 3D semantics)
+      * Geometric silhouette, symmetry, proportions, and primitives
+      * Viewing angle / orientation (three-quarter perspective, front, side, etc.)
+      * Uncertainties, occlusions, and missing details
+      * 3D reconstruction prompt
+    - Returns structured JSON validated via Pydantic
+    - Resilient fallback to local OpenCV heuristic analysis when no remote API key is set
+                      ↓
+[3] InstantMesh 3D Reconstruction Pipeline
+    - Receives clean, preprocessed 320x320 RGB image tensor
+    - Generates 6 sparse multi-view projections
+    - Uses vision reconstruction prompt for metadata and optional downstream refinement
+    - Produces downloadable Wavefront OBJ / GLB 3D mesh asset
 ```
 
 ---
 
-## 3. Why These OpenCV Operations Were Chosen
+## 3. Llama 3.2 Vision Configuration
 
-| Stage | Operation | Rationale & Why It Was Selected |
-| :--- | :--- | :--- |
-| **Alpha Compositing** | `Image.paste(..., mask=alpha)` over white | Transparent PNG sketches often have black or zero RGB in transparent regions. Direct conversion without alpha compositing creates black halo borders that destroy 3D silhouette reconstruction. |
-| **Canvas Padding & Centering** | `cv2.resize(..., cv2.INTER_AREA)` + canvas centering | 3D models like InstantMesh evaluate multi-view camera projections rotated around the center. Stretching an image distorts the object's 3D proportions; placing it too close to the edge causes clipping during novel view synthesis. `INTER_AREA` avoids pixel-skipping on thin lines. |
-| **Contrast Enhancement** | CLAHE on LAB Lightness (`L`) | Global histogram equalization or aggressive thresholding destroys pencil shading and blows out faint lines. CLAHE on the `L` channel enhances faint pencil strokes adaptively while preserving chromaticity and preventing overexposure. |
-| **Noise Filtering** | Bilateral Filter (`cv2.bilateralFilter`) | Standard Gaussian blur softens lines, corners, and thin curves. Morphological operations alter contour geometry. Bilateral filtering weights pixels by both spatial distance and radiometric similarity, smoothing flat paper grain while leaving sharp strokes crisp. |
-| **Thresholding / Binarization** | Disabled by default (conservative) | Binarization destroys anti-aliasing and stroke pressure variations, which image-to-3D diffusion priors rely on for depth estimation. Kept as an explicit opt-in setting. |
-
----
-
-## 4. Integration with the Backend
-
-The FastAPI backend provides two primary endpoints:
-
-1. **`POST /api/preprocess`**: Preprocesses uploaded sketches and returns validated image paths, dimensional metadata, and debug directory paths.
-2. **`POST /api/reconstruct`**: Executes the end-to-end pipeline:
-   - Validates upload format and file size
-   - Preserves the original uploaded file in `uploads/`
-   - Executes `preprocess_sketch()` to generate a clean 320x320 image
-   - Passes the processed path to `reconstruct_3d()`
-   - Outputs the generated 3D mesh (`.obj` or `.glb`)
-
----
-
-## 5. Installation & Setup
-
-### Environment Requirements
-- Python 3.10+ (tested on Python 3.14)
-- Dependencies installed via pip or uv:
+To use remote Llama 3.2 Vision inference, set one of the following environment variables:
 
 ```bash
-# Using standard pip:
-pip install -r requirements.txt
+# Option A: Groq Cloud (Free / Ultra-fast Llama 3.2 Vision)
+export GROQ_API_KEY="your_groq_api_key_here"
+# or in PowerShell:
+$env:GROQ_API_KEY="your_groq_api_key_here"
 
-# Or using uv:
-uv pip install -r requirements.txt
+# Option B: Together AI
+export TOGETHER_API_KEY="your_together_api_key_here"
+
+# Option C: Local Ollama (Completely offline & private)
+# Start Ollama with llama3.2-vision:
+# ollama run llama3.2-vision
+export LLAMA_VISION_BASE_URL="http://localhost:11434/v1"
+```
+
+> **Zero-Config Resilient Fallback:** If no cloud API key is configured or if the remote endpoint times out, the backend automatically triggers an internal OpenCV Heuristic Computer Vision Engine. It detects stroke density, contours, aspect ratio, primitives (rectangles, ellipses), and orientation to return valid structured JSON without crashing.
+
+---
+
+## 4. Structured JSON Schema
+
+The Llama 3.2 Vision analysis returns structured JSON with the following schema:
+
+```json
+{
+  "object_type": "chair",
+  "category": "furniture",
+  "view_type": "three-quarter perspective",
+  "confidence_score": 0.88,
+  "description": "Hand-drawn sketch depicting a minimalist four-legged wooden chair. Observed strokes delineate a horizontal rectangular seat and vertical backrest, while inferred 3D semantics indicate four load-bearing leg posts.",
+  "visible_parts": [
+    {
+      "name": "seat surface",
+      "observed": "horizontal planar boundary stroke",
+      "inferred": "flat horizontal seating platform",
+      "relationships": "connects backrest to support legs"
+    },
+    {
+      "name": "backrest",
+      "observed": "vertical upward boundary strokes above seat level",
+      "inferred": "lumbar support frame",
+      "relationships": "extends upward from rear edge of seat"
+    },
+    {
+      "name": "legs",
+      "observed": "four downward vertical stroke lines",
+      "inferred": "four load-bearing vertical support posts",
+      "relationships": "extend downward from underside of seat to ground"
+    }
+  ],
+  "geometry_features": {
+    "overall_shape": "prismatic silhouette with slender supports",
+    "symmetry": "bilaterally symmetric along vertical axis",
+    "proportions": "width-to-height ratio approximately 0.85:1",
+    "stroke_characteristics": "clean continuous pencil strokes",
+    "observed_geometric_primitives": ["rectangle", "parallel lines"]
+  },
+  "uncertainties": [
+    "Rear leg thickness and joint connections are simplified in 2D line work",
+    "Cushion depth is ambiguous from single contour"
+  ],
+  "reconstruction_prompt": "A minimalist modern chair 3D model, four straight vertical legs, flat seat base, vertical backrest, clean wooden or matte plastic texture, centered on white background, 3D asset ready for reconstruction."
+}
 ```
 
 ---
 
-## 6. How to Run the Tests
+## 5. API Endpoints
 
-Execute pytest against the test suite:
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/health` | Service health status and vision model configuration |
+| `POST` | `/api/preprocess` | OpenCV sketch validation, aspect ratio padding, CLAHE, and denoising |
+| `POST` | `/api/analyze-sketch` | Preprocessing + Llama 3.2 Vision structured semantic analysis |
+| `POST` | `/api/reconstruct` | End-to-end pipeline: Preprocess → Vision Analysis → InstantMesh 3D Asset |
+| `GET` | `/` | Serves the interactive React single page application |
+
+---
+
+## 6. How to Run the Application
+
+### 1. Backend Server & Frontend UI
+```bash
+# Start FastAPI backend (automatically serves API + React UI at http://localhost:8000)
+.venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Open `http://localhost:8000` in any browser to access:
+- Interactive HTML5 sketch drawing pad with brush controls
+- Quick 1-click sample sketches (Chair, Coffee Mug, Vehicle, Rough Ambiguous)
+- Side-by-side OpenCV preprocessed image comparison
+- Full Llama 3.2 Vision analysis dashboard
+- InstantMesh 3D asset generation and `.obj` mesh download
+
+### 2. Optional: Run React Frontend in Vite Dev Server
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## 7. How to Run Tests
+
+Execute the complete pytest suite (25/25 tests passing):
 
 ```bash
 # Run all tests with verbose output:
-python -m pytest -v
-
-# Run with stdout printing:
-python -m pytest -s -v
+.venv\Scripts\python.exe -m pytest -v
 ```
 
-All 16 test cases verify:
-- ✅ Black sketch on white background
-- ✅ White sketch on black chalkboard background (auto-inversion)
-- ✅ Colored RGB sketch preservation
-- ✅ Grayscale (mode 'L') safe conversion
-- ✅ RGBA transparent sketch compositing
-- ✅ Non-square aspect ratio canvas padding (900x300 banner)
-- ✅ Low-contrast faint pencil enhancement
-- ✅ Preservation of 1px thin sketch lines
-- ✅ Mild paper texture/sensor noise reduction
-- ✅ Error handling for corrupted, empty, and missing files
-- ✅ Non-mutation check (original input file SHA-256 untouched)
-- ✅ Debug intermediate stage image generation
-- ✅ FastAPI `/health`, `/api/preprocess`, and `/api/reconstruct` integration
-
----
-
-## 7. Python Usage Example
-
-```python
-from backend.preprocessing import preprocess_sketch
-from backend.config import PreprocessingConfig
-
-# 1. Simple call with default settings (320x320 RGB for InstantMesh):
-output_image_path = preprocess_sketch(
-    input_path="uploads/user_sketch.png",
-    output_path="outputs/preprocessing/model_ready.png",
-    target_size=(320, 320),
-)
-
-# 2. Configurable call with custom parameters and debug mode enabled:
-custom_cfg = PreprocessingConfig(
-    target_size=(512, 512),
-    padding_ratio=0.15,
-    clahe_clip_limit=2.0,
-    noise_filter_type="bilateral",
-    auto_invert_dark_background=True,
-    debug=True,
-    debug_dir="outputs/preprocessing/debug_session_1",
-)
-
-output_image_path = preprocess_sketch(
-    input_path="uploads/faint_sketch.jpg",
-    output_path="outputs/preprocessing/model_ready_512.png",
-    config=custom_cfg,
-    debug=True,
-)
-```
-
----
-
-## 8. Debug Image Output
-
-When `debug=True` (or passing `?debug=true` to `/api/preprocess`), the intermediate images are saved to `outputs/preprocessing/<debug_dir>/`:
-
-1. `original.png`: Loaded image after alpha compositing.
-2. `resized.png`: Uniformly scaled and centered on the padded square canvas.
-3. `contrast.png`: After conservative CLAHE contrast adjustment.
-4. `denoised.png`: After edge-preserving bilateral filtering.
-5. `final.png`: Final model-ready output.
-6. `diagnostic_edges.png`: (Optional) Canny edge diagnostic map.
-
-During normal production inference (`debug=False`), no intermediate images are written to disk.
-
----
-
-## 9. Reconstruction Model Specifications (InstantMesh)
-
-- **Target Resolution**: InstantMesh natively operates with multi-view Zero123++ diffusion backbones expecting **`320x320`** (or **`512x512`** in high-resolution variants) RGB tensors.
-- **Background**: Solid white (`[255, 255, 255]`) background.
-- **Padding Margin**: A 10-15% safety margin around the sketch object is essential to avoid clipping the object geometry when camera views rotate during 3D reconstruction.
-- **Normalization**: Pixel values are uint8 `[0, 255]` on disk; reconstruction models normalize internally to `[0.0, 1.0]` or `[-1.0, 1.0]`.
+Test coverage includes:
+- ✅ 10 required OpenCV preprocessing test cases (black-on-white, white-on-black, RGB, grayscale, RGBA transparency, non-square aspect ratio, low contrast, thin 1px lines, noisy sketch, corrupted image)
+- ✅ Llama 3.2 Vision semantic understanding (chair, coffee mug, rough ambiguous sketch)
+- ✅ Distinguishing observed strokes from inferred 3D semantics
+- ✅ Structured JSON schema validation
+- ✅ Remote vision API inference mocking and error fallback
+- ✅ FastAPI `/api/preprocess`, `/api/analyze-sketch`, and `/api/reconstruct` endpoints

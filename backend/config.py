@@ -1,5 +1,6 @@
-"""Configuration module for Sketch2Shape AI Preprocessing and Backend."""
+"""Configuration module for Sketch2Shape AI Preprocessing, Vision, and Backend."""
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Tuple
@@ -69,6 +70,38 @@ class PreprocessingConfig:
 
 
 @dataclass
+class LlamaVisionConfig:
+    """Settings for Llama 3.2 Vision model inference.
+    
+    Reads credentials strictly from environment variables to prevent accidental exposure.
+    """
+
+    api_key: Optional[str] = field(
+        default_factory=lambda: (
+            os.getenv("LLAMA_VISION_API_KEY")
+            or os.getenv("GROQ_API_KEY")
+            or os.getenv("TOGETHER_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+        )
+    )
+    base_url: str = field(
+        default_factory=lambda: (
+            os.getenv("LLAMA_VISION_BASE_URL")
+            or ("https://api.groq.com/openai/v1" if os.getenv("GROQ_API_KEY") else "http://localhost:11434/v1")
+        )
+    )
+    model: str = field(
+        default_factory=lambda: (
+            os.getenv("LLAMA_VISION_MODEL")
+            or ("llama-3.2-11b-vision-preview" if "groq.com" in os.getenv("LLAMA_VISION_BASE_URL", "") or os.getenv("GROQ_API_KEY") else "meta-llama/Llama-3.2-11B-Vision-Instruct")
+        )
+    )
+    timeout_seconds: float = 30.0
+    temperature: float = 0.2
+    max_tokens: int = 1500
+
+
+@dataclass
 class AppConfig:
     """Application-wide paths and settings."""
 
@@ -77,6 +110,7 @@ class AppConfig:
     output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs")
     debug_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "preprocessing")
     reconstruction_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "reconstructions")
+    frontend_dist_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "frontend" / "dist")
 
     def __post_init__(self):
         self.upload_dir.mkdir(parents=True, exist_ok=True)
@@ -86,3 +120,4 @@ class AppConfig:
 
 
 app_config = AppConfig()
+vision_config = LlamaVisionConfig()
