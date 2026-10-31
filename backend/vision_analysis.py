@@ -101,7 +101,7 @@ class LlamaVisionConfig:
     model: str = field(
         default_factory=lambda: (
             os.getenv("LLAMA_VISION_MODEL")
-            or ("llama-3.2-11b-vision-preview" if "groq.com" in os.getenv("LLAMA_VISION_BASE_URL", "") or os.getenv("GROQ_API_KEY") else "meta-llama/Llama-3.2-11B-Vision-Instruct")
+            or ("qwen/qwen3.8-27b" if "groq.com" in os.getenv("LLAMA_VISION_BASE_URL", "") or os.getenv("GROQ_API_KEY") else "meta-llama/Llama-3.2-11B-Vision-Instruct")
         )
     )
     timeout_seconds: float = 30.0

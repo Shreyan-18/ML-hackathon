@@ -1,0 +1,15 @@
+{
+  "0": "Backend Configuration & Settings",
+  "1": "Sketch Validation & Processing Core",
+  "2": "Vision Model Testing & Fixtures",
+  "3": "Preprocessing Pytest Fixtures",
+  "4": "Llama Vision & Heuristic Analysis",
+  "5": "React Frontend Package & Build Tooling",
+  "8": "System Architecture & Model Backbones",
+  "10": "Backend Package Init",
+  "11": "Test Suite Package Init",
+  "12": "FastAPI Dependency",
+  "13": "NumPy Dependency",
+  "14": "OpenCV Dependency",
+  "15": "Pillow Dependency"
+}
