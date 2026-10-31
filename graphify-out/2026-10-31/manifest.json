@@ -1,0 +1,128 @@
+{
+  "backend/__init__.py": {
+    "mtime": 1793437986.4186041,
+    "seen": 1793438522.066459,
+    "ast_hash": "67049bf644e57d87f3e987e5c1e7798e",
+    "semantic_hash": "67049bf644e57d87f3e987e5c1e7798e"
+  },
+  "backend/config.py": {
+    "mtime": 1793443494.2442884,
+    "seen": 1793443515.681373,
+    "ast_hash": "47fc27ed7a6fe66dcc0608d6166263b7",
+    "semantic_hash": ""
+  },
+  "backend/main.py": {
+    "mtime": 1793442226.506153,
+    "seen": 1793442439.3205051,
+    "ast_hash": "763ab4ab538be24ce7e253091beff4d2",
+    "semantic_hash": "763ab4ab538be24ce7e253091beff4d2"
+  },
+  "backend/preprocessing.py": {
+    "mtime": 1793437986.4191375,
+    "seen": 1793438522.066462,
+    "ast_hash": "edeb234ac549088cbf7e90f20f50128f",
+    "semantic_hash": "edeb234ac549088cbf7e90f20f50128f"
+  },
+  "backend/reconstruction.py": {
+    "mtime": 1793442226.506289,
+    "seen": 1793442439.3205068,
+    "ast_hash": "05731e5711823e9a70fcab2e739f9e40",
+    "semantic_hash": "05731e5711823e9a70fcab2e739f9e40"
+  },
+  "tests/__init__.py": {
+    "mtime": 1793437986.4195724,
+    "seen": 1793438522.066463,
+    "ast_hash": "26f555924e7f75a662cc01de3f3a441b",
+    "semantic_hash": "26f555924e7f75a662cc01de3f3a441b"
+  },
+  "tests/conftest.py": {
+    "mtime": 1793437986.4197123,
+    "seen": 1793438522.066464,
+    "ast_hash": "6c2d6a23137f1ac0d93dbebcc222b78b",
+    "semantic_hash": "6c2d6a23137f1ac0d93dbebcc222b78b"
+  },
+  "tests/test_preprocessing.py": {
+    "mtime": 1793437986.419866,
+    "seen": 1793438522.066464,
+    "ast_hash": "7cac0d2f284a69d55f4549f776e534f6",
+    "semantic_hash": "7cac0d2f284a69d55f4549f776e534f6"
+  },
+  "README.md": {
+    "mtime": 1793442226.505681,
+    "seen": 1793442439.320513,
+    "ast_hash": "271015e99bf732aa20549f58722a114c",
+    "semantic_hash": "271015e99bf732aa20549f58722a114c"
+  },
+  "requirements.txt": {
+    "mtime": 1793437986.419393,
+    "seen": 1793438522.066466,
+    "ast_hash": "308a5b816dd8d04db84babfb0a1e8862",
+    "semantic_hash": "308a5b816dd8d04db84babfb0a1e8862"
+  },
+  "backend/vision_analysis.py": {
+    "mtime": 1793443499.5566654,
+    "seen": 1793443515.681376,
+    "ast_hash": "a89d9d07bcd829da4c4c5254fc42b6b4",
+    "semantic_hash": ""
+  },
+  "frontend/package.json": {
+    "mtime": 1793442226.5068169,
+    "seen": 1793442439.320508,
+    "ast_hash": "58d9b3c991419a3c967f7cc1d05ed4cf",
+    "semantic_hash": "58d9b3c991419a3c967f7cc1d05ed4cf"
+  },
+  "frontend/src/App.jsx": {
+    "mtime": 1793442226.5069795,
+    "seen": 1793442439.320508,
+    "ast_hash": "7561f8f48a9d3b9c07b00c1d5fb43ebf",
+    "semantic_hash": "7561f8f48a9d3b9c07b00c1d5fb43ebf"
+  },
+  "frontend/src/main.jsx": {
+    "mtime": 1793442226.5071294,
+    "seen": 1793442439.320509,
+    "ast_hash": "253d4db42a0b217629b29497cec5becb",
+    "semantic_hash": "253d4db42a0b217629b29497cec5becb"
+  },
+  "frontend/vite.config.js": {
+    "mtime": 1793442226.5072045,
+    "seen": 1793442439.320509,
+    "ast_hash": "0fa34e901ce9f2cd213d33b94ecce761",
+    "semantic_hash": "0fa34e901ce9f2cd213d33b94ecce761"
+  },
+  "tests/test_vision.py": {
+    "mtime": 1793442226.5073044,
+    "seen": 1793442439.3205109,
+    "ast_hash": "19daee4ae2cab227c883a263d6e612e5",
+    "semantic_hash": "19daee4ae2cab227c883a263d6e612e5"
+  },
+  "frontend/index.html": {
+    "mtime": 1793444216.7614765,
+    "seen": 1793444237.4599218,
+    "ast_hash": "095f788c23339f0db859db03fe87dc0b",
+    "semantic_hash": ""
+  },
+  "stitch_sketch_to_3d_generator/DESIGN.md": {
+    "mtime": 1793424142.0,
+    "seen": 1793444237.459923,
+    "ast_hash": "39982c8b34feca44b9b6c4e3ee51d0e3",
+    "semantic_hash": ""
+  },
+  "stitch_sketch_to_3d_generator/code.html": {
+    "mtime": 1793424142.0,
+    "seen": 1793444237.459924,
+    "ast_hash": "c4a621178cb0bff4744eb2feb3944dff",
+    "semantic_hash": ""
+  },
+  "stitch_sketch_to_3d_generator/screen.png": {
+    "mtime": 1793424142.0,
+    "seen": 1793444237.459925,
+    "ast_hash": "388f9fad1ffc6b4042d73629d160eaf5",
+    "semantic_hash": ""
+  },
+  "frontend/package-lock.json": {
+    "mtime": 1793444119.1899905,
+    "seen": 1793444237.459925,
+    "ast_hash": "f7912afab05bba24cc31b4a360065dae",
+    "semantic_hash": ""
+  }
+}

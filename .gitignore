@@ -25,6 +25,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Node / Frontend dependencies
+node_modules/
+frontend/node_modules/
+
 # Graphify local machine paths and cache
 graphify-out/.graphify_*
 graphify-out/cache/
