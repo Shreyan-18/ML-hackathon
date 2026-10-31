@@ -4,50 +4,45 @@ import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 _project_root = str(Path(__file__).resolve().parent.parent)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
+# Auto-load .env configuration if present
+_env_file = Path(_project_root) / ".env"
+if _env_file.exists():
+    try:
+        for _line in _env_file.read_text(encoding="utf-8").splitlines():
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _v = _line.split("=", 1)
+                _k, _v = _k.strip(), _v.strip().strip("'\"")
+                if _k and _k not in os.environ:
+                    os.environ[_k] = _v
+    except Exception:
+        pass
+
+
+def _collect_hf_tokens() -> List[str]:
+    """Collects all available Hugging Face tokens from environment for quota rotation."""
+    candidates = [
+        os.getenv("HUGGINGFACE_API_KEY"),
+        os.getenv("HF_TOKEN"),
+        os.getenv("HUGGINGFACE_TOKEN"),
+        os.getenv("HF_API_KEY"),
+    ]
+    tokens: List[str] = []
+    for t in candidates:
+        if t and t.strip() and t.strip() not in tokens:
+            tokens.append(t.strip())
+    return tokens
+
 
 @dataclass
 class PreprocessingConfig:
-    """Configuration options for sketch image preprocessing.
-    
-    Attributes:
-        target_size: Desired (width, height) output dimensions. Defaults to (320, 320)
-                     which matches InstantMesh / Zero123++ native multi-view grid resolution.
-        preserve_aspect_ratio: Whether to preserve original sketch aspect ratio.
-        padding_ratio: Proportion of canvas reserved as safety margin around the sketch
-                       (prevents boundary clipping during 3D camera rotation).
-        background_color: RGB background color for compositing transparency and canvas
-                          padding. Defaults to (255, 255, 255) for white background.
-        color_mode: Output color mode ("RGB" or "GRAY"). InstantMesh expects "RGB".
-        auto_invert_dark_background: If True, detects dark/chalkboard backgrounds (e.g.
-                                     white strokes on black canvas) and inverts them to
-                                     dark strokes on white background.
-        enable_contrast_enhancement: Whether to apply conservative contrast improvement.
-        contrast_method: "clahe" (Contrast Limited Adaptive Histogram Equalization) or
-                         "linear_stretch" or "none".
-        clahe_clip_limit: Threshold for contrast limiting in CLAHE (conservative: 1.5).
-        clahe_grid_size: Tile grid size for CLAHE (default: (8, 8)).
-        enable_noise_reduction: Whether to apply edge-preserving noise reduction.
-        noise_filter_type: "bilateral" (edge-preserving, recommended), "gaussian",
-                           "median", or "none".
-        bilateral_d: Diameter of each pixel neighborhood for bilateral filter.
-        bilateral_sigma_color: Filter sigma in color space for bilateral filter.
-        bilateral_sigma_space: Filter sigma in coordinate space for bilateral filter.
-        gaussian_ksize: Kernel size for Gaussian filter.
-        gaussian_sigma: Gaussian kernel standard deviation.
-        median_ksize: Aperture linear size for median filter (odd integer).
-        apply_thresholding: Whether to binarize sketch. Default False to preserve delicate
-                            strokes and anti-aliasing.
-        threshold_type: "otsu" or "adaptive".
-        generate_diagnostic_edges: Optional diagnostic edge-map generation (saved in debug mode).
-        debug: Whether to save intermediate pipeline images for debugging.
-        debug_dir: Custom directory to write intermediate debug images to.
-    """
+    """Configuration options for sketch image preprocessing."""
 
     target_size: Tuple[int, int] = (320, 320)
     preserve_aspect_ratio: bool = True
@@ -75,15 +70,20 @@ class PreprocessingConfig:
 
 
 @dataclass
-class LlamaVisionConfig:
-    """Settings for Llama 3.2 Vision model inference.
-    
-    Reads credentials strictly from environment variables to prevent accidental exposure.
-    """
+class VisionConfig:
+    """Settings for Vision model inference (Google Gemini or OpenAI/Llama/Groq compatible)."""
 
+    provider: str = field(
+        default_factory=lambda: (
+            os.getenv("VISION_PROVIDER")
+            or ("gemini" if (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")) else "gemini")
+        )
+    )
     api_key: Optional[str] = field(
         default_factory=lambda: (
-            os.getenv("LLAMA_VISION_API_KEY")
+            os.getenv("GEMINI_API_KEY")
+            or os.getenv("GOOGLE_API_KEY")
+            or os.getenv("LLAMA_VISION_API_KEY")
             or os.getenv("GROQ_API_KEY")
             or os.getenv("TOGETHER_API_KEY")
             or os.getenv("OPENAI_API_KEY")
@@ -91,19 +91,48 @@ class LlamaVisionConfig:
     )
     base_url: str = field(
         default_factory=lambda: (
-            os.getenv("LLAMA_VISION_BASE_URL")
-            or ("https://api.groq.com/openai/v1" if os.getenv("GROQ_API_KEY") else "http://localhost:11434/v1")
+            os.getenv("GEMINI_BASE_URL")
+            or (
+                "https://generativelanguage.googleapis.com/v1beta"
+                if (
+                    os.getenv("VISION_PROVIDER", "gemini") == "gemini"
+                    or os.getenv("GEMINI_API_KEY")
+                    or os.getenv("GOOGLE_API_KEY")
+                    or not os.getenv("GROQ_API_KEY")
+                )
+                else ("https://api.groq.com/openai/v1" if os.getenv("GROQ_API_KEY") else "http://localhost:11434/v1")
+            )
         )
     )
     model: str = field(
         default_factory=lambda: (
-            os.getenv("LLAMA_VISION_MODEL")
-            or ("qwen/qwen3.8-27b" if "groq.com" in os.getenv("LLAMA_VISION_BASE_URL", "") or os.getenv("GROQ_API_KEY") else "meta-llama/Llama-3.2-11B-Vision-Instruct")
+            os.getenv("GEMINI_MODEL")
+            or (
+                "gemini-2.5-flash"
+                if (
+                    os.getenv("VISION_PROVIDER", "gemini") == "gemini"
+                    or os.getenv("GEMINI_API_KEY")
+                    or os.getenv("GOOGLE_API_KEY")
+                    or not os.getenv("GROQ_API_KEY")
+                )
+                else (
+                    os.getenv("LLAMA_VISION_MODEL")
+                    or (
+                        "qwen/qwen3.8-27b"
+                        if "groq.com" in os.getenv("LLAMA_VISION_BASE_URL", "") or os.getenv("GROQ_API_KEY")
+                        else "meta-llama/Llama-3.2-11B-Vision-Instruct"
+                    )
+                )
+            )
         )
     )
-    timeout_seconds: float = 30.0
+    timeout_seconds: float = 20.0
     temperature: float = 0.2
     max_tokens: int = 1500
+
+
+# Backward compatibility alias
+LlamaVisionConfig = VisionConfig
 
 
 @dataclass
@@ -122,7 +151,7 @@ class ForegroundIsolationConfig:
 
 @dataclass
 class Generation25DConfig:
-    """Settings for 2.5D depth estimation, normal map generation, and relief mesh."""
+    """Settings for 2.5D depth estimation, normal map generation, relief mesh, and Gemini volumetric concept render."""
 
     depth_method: str = "balloon"  # "balloon" (distance transform + shading), "gradient", or "model"
     depth_scale: float = 1.0
@@ -134,6 +163,19 @@ class Generation25DConfig:
     relief_base_depth: float = 0.05
     relief_format: str = "obj"  # "obj" or "glb"
     debug: bool = False
+
+    # Gemini 2.5D Volumetric Concept Generation (using dedicated Key 2)
+    gemini_api_key: Optional[str] = field(
+        default_factory=lambda: (
+            os.getenv("GEMINI_25D_API_KEY")
+            or os.getenv("GEMINI_IMAGE_API_KEY")
+            or os.getenv("GEMINI_API_KEY")
+        )
+    )
+    gemini_model: str = field(
+        default_factory=lambda: os.getenv("GEMINI_25D_MODEL") or "gemini-2.5-flash-image"
+    )
+    prompt: str = "Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth."
 
 
 @dataclass
@@ -154,13 +196,60 @@ class RefinementConfig:
     min_edge_overlap_iou: float = 0.30  # Minimum edge contour retention (adapted for line drawings)
     min_silhouette_iou: float = 0.35    # Minimum bounding box/silhouette retention
     max_centroid_drift: float = 0.15     # Maximum 15% centroid shift allowed
-    min_background_cleanliness: float = 0.80 # Minimum 80% background purity
+    min_background_cleanliness: float = 0.80  # Minimum 80% background purity
     min_contrast_ratio: float = 0.20    # Foreground stroke-to-background contrast ratio
     max_component_ratio: float = 3.5    # Prevents hallucinating > 3.5x extra disjoint parts
     min_scale_ratio: float = 0.70       # Detects excessive object shrinkage below 70%
     max_scale_ratio: float = 1.45       # Detects excessive object enlargement above 145%
 
     debug: bool = False
+
+
+@dataclass
+class InstantMeshConfig:
+    """Settings for cloud-accelerated 3D reconstruction via Hugging Face Spaces."""
+
+    hf_token: Optional[str] = field(
+        default_factory=lambda: (
+            os.getenv("HUGGINGFACE_API_KEY")
+            or os.getenv("HF_TOKEN")
+        )
+    )
+    hf_tokens: List[str] = field(default_factory=_collect_hf_tokens)
+    space_id: str = "TencentARC/InstantMesh"
+    fallback_spaces: List[str] = field(
+        default_factory=lambda: [
+            "stabilityai/stable-fast-3d",
+            "tencent/Hunyuan3D-2",
+            "stabilityai/TripoSR",
+        ]
+    )
+    sample_steps: int = 50
+    sample_seed: int = 42
+    timeout: float = 90.0
+    enabled: bool = True
+
+
+@dataclass
+class NvidiaTrellisConfig:
+    """Settings for Microsoft TRELLIS 3D model inference on NVIDIA DGX Cloud NIM."""
+
+    api_key: Optional[str] = field(
+        default_factory=lambda: (
+            os.getenv("NVIDIA_API_KEY")
+            or os.getenv("NVAPI_KEY")
+        )
+    )
+    endpoint: str = "https://ai.api.nvidia.com/v1/genai/microsoft/trellis"
+    timeout: float = 25.0
+    enabled: bool = True
+    max_prompt_chars: int = 75
+    seed: int = 42
+    no_texture: bool = False
+    slat_cfg_scale: float = 3.0
+    ss_cfg_scale: float = 7.5
+    slat_sampling_steps: int = 25
+    ss_sampling_steps: int = 25
 
 
 @dataclass
@@ -192,3 +281,5 @@ vision_config = LlamaVisionConfig()
 foreground_config = ForegroundIsolationConfig()
 generation_25d_config = Generation25DConfig()
 refinement_config = RefinementConfig()
+instantmesh_config = InstantMeshConfig()
+trellis_config = NvidiaTrellisConfig()

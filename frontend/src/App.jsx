@@ -7,9 +7,21 @@ import VisionAnalysisCard from './components/VisionAnalysisCard';
 import ShowcaseGallery from './components/ShowcaseGallery';
 import BriefingModal from './components/BriefingModal';
 
-const API_BASE = import.meta.env.VITE_API_BASE || '';
-
 export default function App() {
+  const [apiBase, setApiBase] = useState(() => {
+    return localStorage.getItem('sketch2shape_api_base') || import.meta.env.VITE_API_BASE || '';
+  });
+
+  const handleUpdateApiBase = (newUrl) => {
+    const trimmed = (newUrl || '').trim().replace(/\/+$/, '');
+    setApiBase(trimmed);
+    if (trimmed) {
+      localStorage.setItem('sketch2shape_api_base', trimmed);
+    } else {
+      localStorage.removeItem('sketch2shape_api_base');
+    }
+  };
+
   const [activeNav, setActiveNav] = useState('create');
   const [selectedModel, setSelectedModel] = useState('ZephyrMesh 2.5 Flagship');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +56,9 @@ export default function App() {
   // 2.5D Volumetric Generation States
   const [generation25DData, setGeneration25DData] = useState(null);
   const [generation25DLoading, setGeneration25DLoading] = useState(false);
+  const [conceptPrompt, setConceptPrompt] = useState(
+    'Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.'
+  );
   const [active3DTab, setActive3DTab] = useState('mesh3d'); // 'mesh3d' or 'relief25d'
 
   // Async API States
@@ -148,7 +163,7 @@ export default function App() {
       formData.append('file', fileToUpload);
 
       const promptParam = promptOverride !== null ? promptOverride : refinementUserPrompt;
-      const url = `${API_BASE}/api/refine-sketch?target_size=${targetSize}${
+      const url = `${apiBase}/api/refine-sketch?target_size=${targetSize}${
         promptParam ? `&user_prompt=${encodeURIComponent(promptParam)}` : ''
       }&strict_validation=true`;
 
@@ -167,7 +182,7 @@ export default function App() {
       setRefinementData(data);
 
       const effectiveFilename = data.effective_image_path.split(/[/\\]/).pop();
-      const effectiveUrl = `${API_BASE}/static/refinement/${effectiveFilename}`;
+      const effectiveUrl = `${apiBase}/static/refinement/${effectiveFilename}`;
       setRefinedPreviewUrl(effectiveUrl);
 
       // Cache effective image blob for downstream pipelines
@@ -234,7 +249,7 @@ export default function App() {
       formData.append('file', fileToUpload);
 
       const res = await fetch(
-        `${API_BASE}/api/foreground-isolate?target_size=${targetSize}&method=auto`,
+        `${apiBase}/api/foreground-isolate?target_size=${targetSize}&method=auto`,
         {
           method: 'POST',
           body: formData,
@@ -251,8 +266,8 @@ export default function App() {
 
       const rgbaFilename = data.rgba_path.split(/[/\\]/).pop();
       const compositeFilename = data.composite_path.split(/[/\\]/).pop();
-      const rgbaUrl = `${API_BASE}/static/foreground/${rgbaFilename}`;
-      const compositeUrl = `${API_BASE}/static/foreground/${compositeFilename}`;
+      const rgbaUrl = `${apiBase}/static/foreground/${rgbaFilename}`;
+      const compositeUrl = `${apiBase}/static/foreground/${compositeFilename}`;
 
       setIsolatedPreviewUrl(rgbaUrl);
 
@@ -309,7 +324,7 @@ export default function App() {
       formData.append('file', fileToUpload);
 
       const res = await fetch(
-        `${API_BASE}/api/generate-25d?target_size=${targetSize}&export_relief=true&format=obj`,
+        `${apiBase}/api/generate-25d?target_size=${targetSize}&export_relief=true&format=obj&prompt=${encodeURIComponent(conceptPrompt)}`,
         {
           method: 'POST',
           body: formData,
@@ -339,7 +354,7 @@ export default function App() {
   const handleAnalyzeVision = async () => {
     setError(null);
     setLoading(true);
-    setStatusMessage('Analyzing sketch with Llama 3.2 Vision...');
+    setStatusMessage('Analyzing sketch with Gemini Vision...');
 
     try {
       let fileToUpload = selectedFile;
@@ -354,7 +369,7 @@ export default function App() {
       const formData = new FormData();
       formData.append('file', fileToUpload);
 
-      const res = await fetch(`${API_BASE}/api/analyze-sketch?target_size=${targetSize}`, {
+      const res = await fetch(`${apiBase}/api/analyze-sketch?target_size=${targetSize}`, {
         method: 'POST',
         body: formData,
       });
@@ -367,7 +382,7 @@ export default function App() {
       const data = await res.json();
       setAnalysisData(data.analysis);
       setPreprocessedData(data.processed_image_path);
-      setSuccessToast('Sketch analyzed with Llama 3.2 Vision!');
+      setSuccessToast('Sketch analyzed with Gemini Vision!');
       setTimeout(() => setSuccessToast(null), 3000);
     } catch (err) {
       console.error(err);
@@ -382,7 +397,7 @@ export default function App() {
   const handleGenerate3D = async () => {
     setError(null);
     setLoading(true);
-    setStatusMessage('Synthesizing Mesh (SDF & InstantMesh LRM)...');
+    setStatusMessage('Connecting to InstantMesh Cloud GPU (ZeroGPU)...');
 
     try {
       const fileToUpload = await getActiveFile();
@@ -393,8 +408,10 @@ export default function App() {
       const formData = new FormData();
       formData.append('file', fileToUpload);
 
+      setStatusMessage('Synthesizing 6-View Multi-View Diffusion & Reconstructing 3D Mesh...');
+
       const res = await fetch(
-        `${API_BASE}/api/reconstruct?target_size=${targetSize}&output_format=obj&debug=${debugMode}`,
+        `${apiBase}/api/reconstruct?target_size=${targetSize}&output_format=glb&debug=${debugMode}`,
         {
           method: 'POST',
           body: formData,
@@ -413,8 +430,13 @@ export default function App() {
         setAnalysisData(data.analysis);
       }
       setPreprocessedData(data.processed_image_path);
-      setSuccessToast('3D Asset Reconstructed & Validated Watertight!');
-      setTimeout(() => setSuccessToast(null), 3500);
+      const isCloud = data?.details?.engine === 'instantmesh_cloud_gpu';
+      setSuccessToast(
+        isCloud
+          ? 'InstantMesh Cloud 3D Asset Reconstructed (OBJ & GLB)!'
+          : '3D Asset Reconstructed & Validated Watertight!'
+      );
+      setTimeout(() => setSuccessToast(null), 4000);
     } catch (err) {
       console.error(err);
       setError(err.message || '3D reconstruction failed.');
@@ -462,6 +484,8 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
+        apiBase={apiBase}
+        onUpdateApiBase={handleUpdateApiBase}
       />
 
       {/* Main Studio Viewport */}
@@ -530,6 +554,9 @@ export default function App() {
             setRefinementUserPrompt={setRefinementUserPrompt}
             refinementSource={refinementSource}
             onSelectRefinementSource={setRefinementSource}
+            // 2.5D Concept Prompt (Gemini Key 2)
+            conceptPrompt={conceptPrompt}
+            setConceptPrompt={setConceptPrompt}
           />
 
           {/* Dual Panel Grid: 3D Viewport (8 cols) & Llama 3.2 Vision Analysis (4 cols) */}
@@ -542,7 +569,7 @@ export default function App() {
                 active3DTab={active3DTab}
                 setActive3DTab={setActive3DTab}
                 sketchType={currentSketchType}
-                apiBase={API_BASE}
+                apiBase={apiBase}
               />
             </div>
 
@@ -558,7 +585,7 @@ export default function App() {
                 refinementData={refinementData}
                 refinedPreviewUrl={refinedPreviewUrl}
                 refinementSource={refinementSource}
-                apiBase={API_BASE}
+                apiBase={apiBase}
               />
             </div>
           </div>

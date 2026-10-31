@@ -41,6 +41,9 @@ export default function VectorStudio({
   setRefinementUserPrompt,
   refinementSource = 'isolated',
   onSelectRefinementSource,
+  // 2.5D Concept Generation Props (Gemini Key 2)
+  conceptPrompt = 'Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.',
+  setConceptPrompt,
 }) {
   const [activeTab, setActiveTab] = useState('sketch'); // 'sketch' or 'upload'
   const [brushColor, setBrushColor] = useState('#FF7F50');
@@ -1115,6 +1118,58 @@ export default function VectorStudio({
           )}
         </div>
       )}
+
+      {/* 2.5D Volumetric Concept Prompt Bar (Gemini Key 2) */}
+      <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0f1418] border-t border-[#7bd0ff]/30 text-xs flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-1.5 text-[#7bd0ff] font-semibold whitespace-nowrap">
+          <span className="material-symbols-outlined text-base">auto_awesome</span>
+          <span>2.5D Concept Prompt:</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#7bd0ff]/15 text-[#7bd0ff] border border-[#7bd0ff]/30 font-mono">
+            Gemini Key 2
+          </span>
+        </div>
+        <input
+          type="text"
+          value={conceptPrompt}
+          onChange={(e) => setConceptPrompt && setConceptPrompt(e.target.value)}
+          placeholder="Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth."
+          className="flex-1 min-w-[200px] bg-[#161d22] border border-[#7bd0ff]/30 rounded-lg px-3 py-1.5 text-white placeholder-[#849588] text-xs focus:outline-none focus:border-[#7bd0ff] transition-colors"
+        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setConceptPrompt && setConceptPrompt('Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.')}
+            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors"
+            title="Reset to default refined instruction"
+          >
+            Default
+          </button>
+          <button
+            type="button"
+            onClick={() => setConceptPrompt && setConceptPrompt('Refine into a smooth organic stylized 3D concept with lush volumetric gradients and soft ambient shadows.')}
+            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors hidden sm:inline"
+            title="Organic Stylized Preset"
+          >
+            Organic
+          </button>
+          <button
+            type="button"
+            onClick={() => setConceptPrompt && setConceptPrompt('Matte ceramic white clay render with clean smoothed contours, soft ambient occlusion, and studio key-lighting.')}
+            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors hidden sm:inline"
+            title="Studio Clay Preset"
+          >
+            Clay
+          </button>
+          <button
+            type="button"
+            onClick={() => setConceptPrompt && setConceptPrompt('Metallic brushed titanium studio render with sharp specular highlights and rim lighting.')}
+            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors hidden md:inline"
+            title="Titanium Preset"
+          >
+            Titanium
+          </button>
+        </div>
+      </div>
 
       {/* Footer Controls & Generation Actions */}
       <div className="flex items-center justify-between flex-wrap gap-4 p-4 bg-[#272a2d]/40 border-t border-[#323537]/30 text-xs">

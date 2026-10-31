@@ -1,12 +1,23 @@
 {
-  "1": "Sketch Validation & Processing Core",
-  "2": "Vision Model Testing & Fixtures",
-  "3": "Preprocessing Pytest Fixtures",
+  "0": "main.py",
+  "1": "preprocess_sketch",
+  "2": "analyze_sketch_with_llama_vision",
+  "3": "conftest.py",
+  "4": "generate_25d",
   "5": "React Frontend Package & Build Tooling",
+  "6": "DESIGN.md",
+  "7": "api_preprocess_sketch",
   "8": "System Architecture & Model Backbones",
+  "9": "Path",
+  "10": "rules/graphify.md",
   "11": "Test Suite Package Init",
   "12": "FastAPI Dependency",
   "13": "NumPy Dependency",
   "14": "OpenCV Dependency",
-  "15": "Pillow Dependency"
+  "15": "Pillow Dependency",
+  "16": "AppConfig",
+  "17": "workflows/graphify.md",
+  "18": "colab_backend.py",
+  "19": "isolate_foreground",
+  "20": "colab_gemini_prompt.md"
 }

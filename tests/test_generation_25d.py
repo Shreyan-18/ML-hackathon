@@ -96,3 +96,28 @@ def test_generate_25d_end_to_end(black_on_white_sketch: Path, test_dir: Path):
 
     with Image.open(res.normal_map_path) as n_img:
         assert n_img.mode == "RGB"
+
+    assert res.concept_render_path is not None
+    assert Path(res.concept_render_path).exists()
+    assert res.prompt_used is not None
+    with Image.open(res.concept_render_path) as c_img:
+        assert c_img.mode == "RGB"
+
+
+def test_synthesize_gemini_volumetric_concept_fallback(black_on_white_sketch: Path, test_dir: Path):
+    """Verify volumetric studio concept synthesis functions correctly with fallback."""
+    from backend.generation_25d import synthesize_gemini_volumetric_concept
+    depth = np.zeros((64, 64), dtype=np.uint8)
+    normal = np.full((64, 64, 3), 128, dtype=np.uint8)
+    out_concept = test_dir / "test_concept.png"
+
+    path, svg_path, backend_used = synthesize_gemini_volumetric_concept(
+        image_path=black_on_white_sketch,
+        prompt="Test volumetric concept render",
+        output_path=out_concept,
+        depth_map=depth,
+        normal_map=normal,
+        api_key="mock_invalid_key",
+    )
+    assert Path(path).exists()
+    assert backend_used in ("gemini-guided-studio", "local-studio-fallback", "gemini-direct")

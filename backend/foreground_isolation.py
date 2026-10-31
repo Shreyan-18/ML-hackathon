@@ -1,8 +1,9 @@
 """Foreground Isolation and Background Removal Module for Sketch2Shape AI.
 
 This module isolates the primary sketch subject from paper backgrounds, scanner artifacts,
-and transparent canvas borders. It provides rembg neural segmentation with an edge-preserving
-OpenCV morphological fallback, hole-filling, speck removal, and centered canvas re-compositing.
+checkerboard transparency grids, and transparent canvas borders. It provides rembg neural
+segmentation with an edge-preserving OpenCV morphological fallback, hole-filling, speck
+removal, and centered canvas re-compositing.
 """
 
 from __future__ import annotations
@@ -58,37 +59,108 @@ def _extract_with_rembg(image_rgb: np.ndarray, model_name: str = "birefnet-gener
     return None
 
 
+def strip_border_connected_background(image_rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Detects and strips solid or checkerboard backgrounds connected to the canvas border.
+
+    Handles:
+    - Standard white or off-white paper backgrounds
+    - Fake-transparent gray/white checkerboard PNG backgrounds (e.g., alternating ~204 and ~255 tiles)
+    - Uniform border frames
+
+    Returns:
+        Tuple of (cleaned_rgb_on_white, foreground_binary_mask)
+    """
+    h, w = image_rgb.shape[:2]
+    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+    hsv = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2HSV)
+    sat = hsv[:, :, 1]
+
+    # Sample border pixels (outer 6% margin)
+    margin_y = max(4, int(h * 0.06))
+    margin_x = max(4, int(w * 0.06))
+    border_mask = np.zeros((h, w), dtype=bool)
+    border_mask[:margin_y, :] = True
+    border_mask[-margin_y:, :] = True
+    border_mask[:, :margin_x] = True
+    border_mask[:, -margin_x:] = True
+
+    border_gray = gray[border_mask]
+    border_sat = sat[border_mask]
+
+    # Check if border is predominantly achromatic/neutral (low saturation, light/mid-gray to white)
+    neutral_border = border_gray[border_sat < 35]
+    if len(neutral_border) > 0:
+        min_bg_lum = max(165.0, float(np.percentile(neutral_border, 5)) - 12.0)
+    else:
+        min_bg_lum = 225.0
+
+    # Candidate background pixels: low saturation (< 32) and brightness >= min_bg_lum,
+    # OR nearly pure white (brightness >= 242)
+    is_bg_candidate = ((sat < 32) & (gray >= min_bg_lum)) | (gray >= 242)
+
+    # Also protect strong local Canny edges that belong to dark/colored object contours,
+    # UNLESS the edges are just weak gray-white checkerboard grid transitions
+    bg_uint8 = is_bg_candidate.astype(np.uint8) * 255
+
+    # Find connected components of candidate background that touch the outer image boundary
+    num_labels, labels = cv2.connectedComponents(bg_uint8, connectivity=8)
+    border_labels = np.unique(
+        np.concatenate([
+            labels[0, :],
+            labels[-1, :],
+            labels[:, 0],
+            labels[:, -1],
+            labels[margin_y // 2, :],
+            labels[-1 - margin_y // 2, :],
+            labels[:, margin_x // 2],
+            labels[:, -1 - margin_x // 2],
+        ])
+    )
+    border_labels = border_labels[border_labels > 0]
+
+    connected_bg = np.isin(labels, border_labels)
+    fg_mask = (~connected_bg).astype(np.uint8) * 255
+
+    # Clean up thin 1-2px checkerboard seam remnants outside the main subject
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    fg_mask_opened = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, kernel_open)
+    if np.count_nonzero(fg_mask_opened) > int(h * w * 0.005):
+        fg_mask = fg_mask_opened
+
+    cleaned_rgb = image_rgb.copy()
+    cleaned_rgb[fg_mask == 0] = [255, 255, 255]
+    return cleaned_rgb, fg_mask
+
+
 def _extract_with_opencv_saliency(
     image_rgb: np.ndarray,
     background_color: Tuple[int, int, int] = (255, 255, 255),
 ) -> np.ndarray:
-    """Robust OpenCV-based foreground contour and saliency extraction fallback."""
-    # Convert to grayscale
-    gray = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
+    """Robust OpenCV-based foreground contour, checkerboard stripping, and saliency extraction."""
+    cleaned_rgb, border_fg_mask = strip_border_connected_background(image_rgb)
+    gray = cv2.cvtColor(cleaned_rgb, cv2.COLOR_RGB2GRAY)
 
-    # Estimate border background value
-    border_pixels = np.concatenate([
-        gray[:5, :].ravel(),
-        gray[-5:, :].ravel(),
-        gray[:, :5].ravel(),
-        gray[:, -5:].ravel(),
-    ])
-    bg_lum = np.median(border_pixels)
-
-    # Determine difference from background
-    diff = np.abs(gray.astype(np.float32) - bg_lum).astype(np.uint8)
+    # Determine difference from clean white background (255)
+    diff = (255 - gray).astype(np.uint8)
 
     # Adaptive thresholding to segment strokes and foreground
     blurred = cv2.GaussianBlur(diff, (5, 5), 0)
-    _, mask = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _, otsu_mask = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     # Also include high gradient edges to catch thin lines
     edges = cv2.Canny(gray, 40, 120)
-    mask = cv2.bitwise_or(mask, edges)
+    stroke_mask = cv2.bitwise_or(otsu_mask, edges)
+
+    # Combine border-stripped silhouette mask with stroke mask
+    fg_ratio = np.count_nonzero(border_fg_mask) / float(border_fg_mask.size)
+    if 0.01 <= fg_ratio <= 0.85:
+        mask = cv2.bitwise_or(border_fg_mask, stroke_mask)
+    else:
+        mask = stroke_mask
 
     # Create RGBA array
     rgba = np.zeros((image_rgb.shape[0], image_rgb.shape[1], 4), dtype=np.uint8)
-    rgba[:, :, :3] = image_rgb
+    rgba[:, :, :3] = cleaned_rgb
     rgba[:, :, 3] = mask
     return rgba
 
@@ -195,17 +267,7 @@ def isolate_foreground(
     target_size: Optional[Tuple[int, int]] = (320, 320),
     config: Optional[ForegroundIsolationConfig] = None,
 ) -> ForegroundIsolationResult:
-    """Main pipeline execution for foreground isolation and background cleaning.
-
-    Args:
-        input_image_path: Path to the input sketch or preprocessed image.
-        output_dir: Destination directory. Defaults to app_config.foreground_output_dir.
-        target_size: Target square dimensions (e.g. 320x320 for InstantMesh).
-        config: Optional configuration overrides.
-
-    Returns:
-        ForegroundIsolationResult containing paths to RGBA, composite, and mask images.
-    """
+    """Main pipeline execution for foreground isolation and background cleaning."""
     cfg = config or ForegroundIsolationConfig()
     in_path = Path(input_image_path)
     if not in_path.exists():
@@ -251,7 +313,6 @@ def isolate_foreground(
     composite_out = out_directory / f"{stem}_composite.png"
     mask_out = out_directory / f"{stem}_mask.png"
 
-    # Write RGBA using PIL (OpenCV imwrite can have channel ordering issues with PNG alpha)
     Image.fromarray(centered_rgba, mode="RGBA").save(rgba_out)
     Image.fromarray(centered_composite, mode="RGB").save(composite_out)
     Image.fromarray(centered_rgba[:, :, 3], mode="L").save(mask_out)

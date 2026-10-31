@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export default function Viewport3D({
   reconstructionData,
@@ -23,12 +24,19 @@ export default function Viewport3D({
   const [turntableActive, setTurntableActive] = useState(true);
   const [showTopologyInfo, setShowTopologyInfo] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showMvsModal, setShowMvsModal] = useState(false);
+  const [loadingModel, setLoadingModel] = useState(false);
 
   const isReliefActive = active3DTab === 'relief25d' && !!generation25DData?.relief_mesh_path;
+  const isTrellis = reconstructionData?.details?.engine === 'nvidia_trellis_dgx';
+  const isInstantMesh = reconstructionData?.details?.engine === 'instantmesh_cloud_gpu';
+  const hasMultiview = !!reconstructionData?.multiview_path;
 
   // Model metadata
   const modelName = isReliefActive
     ? generation25DData.relief_mesh_path.split(/[/\\]/).pop()
+    : reconstructionData?.glb_3d_path
+    ? reconstructionData.glb_3d_path.split(/[/\\]/).pop()
     : reconstructionData?.model_3d_path
     ? reconstructionData.model_3d_path.split(/[/\\]/).pop()
     : sketchType === 'drone'
@@ -42,12 +50,17 @@ export default function Viewport3D({
     : 'Synthesized_SDF_Mesh.glb';
 
   const trisCount = isReliefActive
-    ? (generation25DData?.mesh_stats?.face_count || '32,768')
+    ? (generation25DData?.mesh_stats?.face_count?.toLocaleString() || '32,768')
+    : reconstructionData?.details?.mesh_stats?.face_count
+    ? reconstructionData.details.mesh_stats.face_count.toLocaleString()
     : reconstructionData
     ? '48,220'
     : '42,850';
+
   const verticesCount = isReliefActive
-    ? (generation25DData?.mesh_stats?.vertex_count || '16,384')
+    ? (generation25DData?.mesh_stats?.vertex_count?.toLocaleString() || '16,384')
+    : reconstructionData?.details?.mesh_stats?.vertex_count
+    ? reconstructionData.details.mesh_stats.vertex_count.toLocaleString()
     : reconstructionData
     ? '24,112'
     : '21,420';
@@ -68,47 +81,48 @@ export default function Viewport3D({
         } else if (mode === 'normals') {
           child.material = new THREE.MeshNormalMaterial({
             wireframe: false,
+            side: THREE.DoubleSide,
           });
         } else if (mode === 'matcap') {
           child.material = new THREE.MeshStandardMaterial({
             color: 0xd9e2ec,
             metalness: 0.85,
-            roughness: 0.18,
+            roughness: 0.15,
+            side: THREE.DoubleSide,
           });
         } else {
-          // PBR textured
-          child.material = new THREE.MeshStandardMaterial({
-            color: child.userData.originalColor || 0x1f2937,
-            metalness: 0.8,
-            roughness: 0.35,
-            emissive: child.userData.emissive || 0x000000,
-            emissiveIntensity: child.userData.emissiveIntensity || 0.0,
-          });
+          // PBR Default
+          if (child.userData.originalMaterial) {
+            child.material = child.userData.originalMaterial;
+          } else {
+            const hasVertexColors = Boolean(child.geometry?.attributes?.color);
+            child.material = new THREE.MeshStandardMaterial({
+              color: hasVertexColors ? 0xffffff : 0x87cbb2,
+              vertexColors: hasVertexColors,
+              metalness: hasVertexColors ? 0.25 : 0.65,
+              roughness: hasVertexColors ? 0.5 : 0.35,
+              side: THREE.DoubleSide,
+            });
+          }
         }
       }
     });
   }, []);
 
-  // Procedural 3D Model Generator for sketches
+  // Build high-detail parametric preview model based on active sketch archetype
   const buildProceduralModel = useCallback((type) => {
     const group = new THREE.Group();
 
     if (type === 'drone') {
       // 1. Center Fuselage
-      const bodyGeo = new THREE.CylinderGeometry(0.7, 1.2, 0.4, 8);
-      bodyGeo.scale(1.4, 0.8, 1.8);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x1e242b,
-        metalness: 0.85,
-        roughness: 0.3,
-      });
+      const bodyGeo = new THREE.CylinderGeometry(0.6, 0.9, 0.45, 8);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8, roughness: 0.2 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.userData.originalColor = 0x1e242b;
+      body.userData.originalColor = 0x1f2937;
       group.add(body);
 
-      // 2. Cockpit Sensor Dome
-      const domeGeo = new THREE.SphereGeometry(0.5, 16, 16);
-      domeGeo.scale(1.1, 0.6, 1.4);
+      // 2. Sensor Cockpit Dome (Coral Glow)
+      const domeGeo = new THREE.SphereGeometry(0.35, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
       const domeMat = new THREE.MeshStandardMaterial({
         color: 0xff7f50,
         emissive: 0xff7f50,
@@ -117,9 +131,6 @@ export default function Viewport3D({
       });
       const dome = new THREE.Mesh(domeGeo, domeMat);
       dome.position.set(0, 0.25, 0.2);
-      dome.userData.originalColor = 0xff7f50;
-      dome.userData.emissive = 0xff7f50;
-      dome.userData.emissiveIntensity = 0.6;
       group.add(dome);
 
       // 3. Four Quad-Arms with Rotor Pods
@@ -142,7 +153,6 @@ export default function Viewport3D({
 
         const pod = new THREE.Mesh(podGeo, podMat);
         pod.position.set(x, 0.05, z);
-        pod.userData.originalColor = 0x00f59b;
         group.add(pod);
 
         const blade = new THREE.Mesh(bladeGeo, armMat);
@@ -151,11 +161,9 @@ export default function Viewport3D({
         group.add(blade);
       });
     } else if (type === 'chair') {
-      // Modernist Armchair
       const seatGeo = new THREE.BoxGeometry(1.6, 0.2, 1.6);
       const backGeo = new THREE.BoxGeometry(1.6, 1.5, 0.2);
       const cushionMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
-      const frameMat = new THREE.MeshStandardMaterial({ color: 0xff7f50, metalness: 0.9, roughness: 0.2 });
 
       const seat = new THREE.Mesh(seatGeo, cushionMat);
       seat.position.y = 0.5;
@@ -165,8 +173,8 @@ export default function Viewport3D({
       back.position.set(0, 1.25, -0.7);
       group.add(back);
 
-      // Legs
       const legGeo = new THREE.CylinderGeometry(0.04, 0.03, 1.0, 8);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0xff7f50, metalness: 0.9, roughness: 0.2 });
       const legPositions = [
         [-0.7, 0, -0.7],
         [0.7, 0, -0.7],
@@ -174,62 +182,11 @@ export default function Viewport3D({
         [0.7, 0, 0.7],
       ];
       legPositions.forEach(([x, y, z]) => {
-        const leg = new THREE.Mesh(legGeo, frameMat);
-        leg.position.set(x, y, z);
+        const leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(x, 0, z);
         group.add(leg);
       });
-    } else if (type === 'mug') {
-      // Coffee Mug
-      const mugBodyGeo = new THREE.CylinderGeometry(0.7, 0.65, 1.4, 24, 1, true);
-      const bottomGeo = new THREE.CircleGeometry(0.65, 24);
-      bottomGeo.rotateX(Math.PI / 2);
-      const handleGeo = new THREE.TorusGeometry(0.45, 0.08, 12, 24, Math.PI * 1.1);
-
-      const ceramicMat = new THREE.MeshStandardMaterial({ color: 0xff7f50, roughness: 0.15, metalness: 0.1 });
-      const body = new THREE.Mesh(mugBodyGeo, ceramicMat);
-      body.position.y = 0.7;
-      group.add(body);
-
-      const bottom = new THREE.Mesh(bottomGeo, ceramicMat);
-      bottom.position.y = 0;
-      group.add(bottom);
-
-      const handle = new THREE.Mesh(handleGeo, ceramicMat);
-      handle.position.set(0.7, 0.7, 0);
-      handle.rotation.z = -Math.PI / 2;
-      group.add(handle);
-    } else if (type === 'car') {
-      // Angular Cyber EV
-      const chassisGeo = new THREE.BoxGeometry(3.0, 0.7, 1.4);
-      const cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 1.2);
-      const carMat = new THREE.MeshStandardMaterial({ color: 0x1e242b, metalness: 0.85, roughness: 0.2 });
-      const glassMat = new THREE.MeshStandardMaterial({ color: 0x00f59b, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.7 });
-
-      const chassis = new THREE.Mesh(chassisGeo, carMat);
-      chassis.position.y = 0.5;
-      group.add(chassis);
-
-      const cabin = new THREE.Mesh(cabinGeo, glassMat);
-      cabin.position.set(0.1, 1.0, 0);
-      group.add(cabin);
-
-      // Wheels
-      const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.25, 16);
-      wheelGeo.rotateZ(Math.PI / 2);
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0c0f11, roughness: 0.8 });
-      const wheelPositions = [
-        [-1.0, 0.38, -0.75],
-        [1.0, 0.38, -0.75],
-        [-1.0, 0.38, 0.75],
-        [1.0, 0.38, 0.75],
-      ];
-      wheelPositions.forEach(([x, y, z]) => {
-        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-        wheel.position.set(x, y, z);
-        group.add(wheel);
-      });
     } else {
-      // Default abstract geometric sculpture
       const icosaGeo = new THREE.IcosahedronGeometry(1.2, 1);
       const mat = new THREE.MeshStandardMaterial({ color: 0x00f59b, metalness: 0.8, roughness: 0.3 });
       const mesh = new THREE.Mesh(icosaGeo, mat);
@@ -239,7 +196,43 @@ export default function Viewport3D({
     return group;
   }, []);
 
-  // Initialize Three.js scene
+  // Configure material for loaded mesh preserving textures and vertex colors
+  const configureLoadedMeshMaterial = (child, fallbackColor = 0xff7f50) => {
+    if (!child.isMesh) return;
+    child.castShadow = true;
+    child.receiveShadow = true;
+    if (child.geometry && !child.geometry.attributes.normal) {
+      child.geometry.computeVertexNormals();
+    }
+    const hasTexture = Boolean(child.material && child.material.map);
+    const hasVertexColors = Boolean(child.geometry && child.geometry.attributes && child.geometry.attributes.color);
+
+    if (hasTexture) {
+      child.material.side = THREE.DoubleSide;
+    } else if (hasVertexColors) {
+      child.material = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        metalness: 0.22,
+        roughness: 0.48,
+        side: THREE.DoubleSide,
+      });
+    } else if (
+      !child.material ||
+      child.material.color?.getHex() === 0xffffff ||
+      child.material.color?.getHex() === 0x000000
+    ) {
+      child.material = new THREE.MeshStandardMaterial({
+        color: fallbackColor,
+        metalness: 0.45,
+        roughness: 0.32,
+        side: THREE.DoubleSide,
+      });
+    }
+    child.userData.originalMaterial = child.material.clone();
+  };
+
+  // Initialize Three.js scene & load models
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -274,19 +267,19 @@ export default function Viewport3D({
     controls.minDistance = 1;
     controlsRef.current = controls;
 
-    // 5. Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    // 5. Lighting (Balanced studio three-point lighting so vertex colors & textures look natural)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.45);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xff7f50, 2.2); // Key light (Coral)
+    const dirLight1 = new THREE.DirectionalLight(0xfff5eb, 1.9); // Warm studio key light
     dirLight1.position.set(5, 8, 5);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0x00f59b, 1.8); // Fill / Rim light (Mint)
+    const dirLight2 = new THREE.DirectionalLight(0xb8ffe3, 1.2); // Soft mint rim/fill light
     dirLight2.position.set(-5, 4, -5);
     scene.add(dirLight2);
 
-    const pointLight = new THREE.PointLight(0x7bd0ff, 1.5, 10); // Center backlight
+    const pointLight = new THREE.PointLight(0x7bd0ff, 1.1, 12); // Center backlight
     pointLight.position.set(0, -2, 2);
     scene.add(pointLight);
 
@@ -300,71 +293,120 @@ export default function Viewport3D({
     scene.add(group);
     meshGroupRef.current = group;
 
-    // Check if 2.5D relief or 3D OBJ model exists
+    // Helper: Center and normalize any 3D object to fill viewport comfortably
+    const centerAndScaleMesh = (root, targetSize = 2.4) => {
+      const box = new THREE.Box3().setFromObject(root);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const scale = targetSize / maxDim;
+      root.position.sub(center.multiplyScalar(scale));
+      root.scale.set(scale, scale, scale);
+    };
+
+    // Load Model
     if (isReliefActive) {
+      setLoadingModel(true);
       const reliefFilename = generation25DData.relief_mesh_path.split(/[/\\]/).pop();
       const objUrl = `${apiBase}/static/generation25d/${reliefFilename}`;
       const loader = new OBJLoader();
       loader.load(
         objUrl,
         (obj) => {
+          setLoadingModel(false);
           group.clear();
-          obj.traverse((child) => {
-            if (child.isMesh) {
-              child.geometry.center();
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0x7bd0ff,
-                metalness: 0.65,
-                roughness: 0.25,
-              });
-            }
-          });
-          obj.scale.set(1.6, 1.6, 1.6);
+          centerAndScaleMesh(obj, 2.2);
+          obj.traverse((child) => configureLoadedMeshMaterial(child, 0x7bd0ff));
           group.add(obj);
           applyShadingMode(shadingMode);
         },
         undefined,
         (err) => {
+          setLoadingModel(false);
           console.warn('Failed to load Relief OBJ, falling back to procedural:', err);
           group.clear();
-          const proc = buildProceduralModel(sketchType);
-          group.add(proc);
+          group.add(buildProceduralModel(sketchType));
           applyShadingMode(shadingMode);
         }
       );
+    } else if (reconstructionData?.glb_3d_path) {
+      // Prioritize GLB for full PBR materials, vertex colors, and faster parsing
+      setLoadingModel(true);
+      const glbFilename = reconstructionData.glb_3d_path.split(/[/\\]/).pop();
+      const glbUrl = `${apiBase}/static/outputs/reconstructions/${glbFilename}`;
+      const gltfLoader = new GLTFLoader();
+      gltfLoader.load(
+        glbUrl,
+        (gltf) => {
+          setLoadingModel(false);
+          group.clear();
+          const root = gltf.scene;
+          centerAndScaleMesh(root, 2.4);
+          root.traverse((child) => configureLoadedMeshMaterial(child, 0xff7f50));
+          group.add(root);
+          applyShadingMode(shadingMode);
+        },
+        undefined,
+        (err) => {
+          console.warn('GLTFLoader failed, attempting fallback OBJLoader:', err);
+          if (reconstructionData?.model_3d_path) {
+            const objFilename = reconstructionData.model_3d_path.split(/[/\\]/).pop();
+            const objUrl = `${apiBase}/static/outputs/reconstructions/${objFilename}`;
+            const objLoader = new OBJLoader();
+            objLoader.load(
+              objUrl,
+              (obj) => {
+                setLoadingModel(false);
+                group.clear();
+                centerAndScaleMesh(obj, 2.4);
+                obj.traverse((child) => configureLoadedMeshMaterial(child, 0x87cbb2));
+                group.add(obj);
+                applyShadingMode(shadingMode);
+              },
+              undefined,
+              () => {
+                setLoadingModel(false);
+                group.clear();
+                group.add(buildProceduralModel(sketchType));
+                applyShadingMode(shadingMode);
+              }
+            );
+          } else {
+            setLoadingModel(false);
+            group.clear();
+            group.add(buildProceduralModel(sketchType));
+            applyShadingMode(shadingMode);
+          }
+        }
+      );
     } else if (reconstructionData?.model_3d_path) {
-      const objUrl = `${apiBase}/static/outputs/reconstructions/${reconstructionData.model_3d_path.split(/[/\\]/).pop()}`;
+      // Load OBJ
+      setLoadingModel(true);
+      const objFilename = reconstructionData.model_3d_path.split(/[/\\]/).pop();
+      const objUrl = `${apiBase}/static/outputs/reconstructions/${objFilename}`;
       const loader = new OBJLoader();
       loader.load(
         objUrl,
         (obj) => {
+          setLoadingModel(false);
           group.clear();
-          obj.traverse((child) => {
-            if (child.isMesh) {
-              child.geometry.center();
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0x87cbb2,
-                metalness: 0.75,
-                roughness: 0.35,
-              });
-            }
-          });
-          obj.scale.set(1.5, 1.5, 1.5);
+          centerAndScaleMesh(obj, 2.4);
+          obj.traverse((child) => configureLoadedMeshMaterial(child, 0x87cbb2));
           group.add(obj);
           applyShadingMode(shadingMode);
         },
         undefined,
         (err) => {
+          setLoadingModel(false);
           console.warn('Failed to load OBJ, falling back to procedural model:', err);
           group.clear();
-          const proc = buildProceduralModel(sketchType);
-          group.add(proc);
+          group.add(buildProceduralModel(sketchType));
           applyShadingMode(shadingMode);
         }
       );
     } else {
-      const proc = buildProceduralModel(sketchType);
-      group.add(proc);
+      group.clear();
+      group.add(buildProceduralModel(sketchType));
       applyShadingMode(shadingMode);
     }
 
@@ -468,6 +510,26 @@ export default function Viewport3D({
     }
   };
 
+  // Download GLB mesh
+  const handleDownloadGlb = () => {
+    if (reconstructionData?.glb_3d_path) {
+      const fileName = reconstructionData.glb_3d_path.split(/[/\\]/).pop();
+      const url = `${apiBase}/static/outputs/reconstructions/${fileName}`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      alert('GLB format synthesized and validated. OBJ is ready for download.');
+    }
+  };
+
+  const multiviewUrl = hasMultiview
+    ? `${apiBase}/static/outputs/reconstructions/${reconstructionData.multiview_path.split(/[/\\]/).pop()}`
+    : null;
+
   return (
     <div className="flex flex-col gap-3 p-4 rounded-2xl bg-[#191c1e]/90 border border-[#323537]/50 backdrop-blur-xl shadow-xl">
       {/* Viewport Header */}
@@ -503,6 +565,22 @@ export default function Viewport3D({
 
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-display font-semibold text-lg text-white">{modelName}</span>
+            {isTrellis ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-[#76b900]/20 border border-[#76b900]/40 text-[#8ade00] text-xs font-semibold flex items-center gap-1 shadow-sm">
+                <span className="material-symbols-outlined text-xs">neurology</span>
+                NVIDIA NIM TRELLIS (DGX Cloud)
+              </span>
+            ) : isInstantMesh ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-[#00f59b]/20 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">bolt</span>
+                InstantMesh Cloud GPU
+              </span>
+            ) : reconstructionData ? (
+              <span className="px-2.5 py-0.5 rounded-full bg-[#FF7F50]/20 border border-[#FF7F50]/40 text-[#FF7F50] text-xs font-semibold flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">view_in_ar</span>
+                360° Bilateral Volumetric 3D
+              </span>
+            ) : null}
             <span className="px-2 py-0.5 rounded-full bg-[#00f59b]/20 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold">
               Watertight Validated
             </span>
@@ -513,11 +591,25 @@ export default function Viewport3D({
           <span className="text-xs text-[#849588] mt-0.5">
             {isReliefActive
               ? `2.5D Watertight Relief Mesh • Max Height: ${generation25DData.mesh_stats?.max_relief_height || 0.35} • Euler: ${generation25DData.mesh_stats?.euler_characteristic || 2}`
-              : 'Reconstructed from vector canvas in 23.4s • Ready for Game Engines & 3D Print Slicers'}
+              : isTrellis
+              ? `Synthesized via Microsoft TRELLIS on NVIDIA DGX Cloud with Photorealistic PBR Texturing${reconstructionData?.details?.prompt_used ? ` • "${reconstructionData.details.prompt_used}"` : ''}`
+              : isInstantMesh
+              ? `Synthesized via ${reconstructionData?.details?.architecture || 'InstantMesh ZeroGPU'} with Multi-View Diffusion`
+              : '360° Silhouette-Carved Bilateral Volumetric Mesh • Ready for Game Engines & 3D Print Slicers'}
           </span>
         </div>
 
         <div className="flex items-center gap-1.5">
+          {hasMultiview && (
+            <button
+              onClick={() => setShowMvsModal(true)}
+              className="px-2.5 py-1.5 rounded-lg bg-[#00f59b]/15 hover:bg-[#00f59b]/25 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold flex items-center gap-1 transition-all"
+              title="View 6-Camera Projections"
+            >
+              <span className="material-symbols-outlined text-sm">view_carousel</span>
+              <span>6-View Diffusion</span>
+            </button>
+          )}
           <button
             onClick={toggleFullscreen}
             className="w-9 h-9 rounded-lg bg-[#1d2022] hover:bg-[#272a2d] border border-[#323537]/40 flex items-center justify-center text-[#bfc9c3] hover:text-[#FF7F50] transition-colors"
@@ -539,8 +631,26 @@ export default function Viewport3D({
         </div>
       </div>
 
+      {/* Notice Banner when HF ZeroGPU Quota was exceeded */}
+      {reconstructionData?.details?.engine_notice && (
+        <div className="p-2.5 px-3.5 rounded-xl bg-[#FF7F50]/15 border border-[#FF7F50]/35 text-[#ffd3c7] text-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-[#FF7F50]">cloud_off</span>
+            <span>{reconstructionData.details.engine_notice}</span>
+          </div>
+        </div>
+      )}
+
       {/* Main 3D Canvas Box */}
       <div className="relative w-full rounded-xl overflow-hidden bg-[#080a0c] shadow-2xl flex flex-col border border-[#323537]/40">
+        {/* Loading Spinner Overlay */}
+        {loadingModel && (
+          <div className="absolute inset-0 z-30 bg-[#080a0c]/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+            <span className="material-symbols-outlined text-3xl text-[#00f59b] animate-spin">progress_activity</span>
+            <span className="text-xs text-white font-medium">Parsing and centering 3D mesh geometry...</span>
+          </div>
+        )}
+
         {/* Floating Top Toolbars */}
         <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none flex-wrap gap-2">
           {/* Shading Mode Tabs */}
@@ -600,7 +710,7 @@ export default function Viewport3D({
             </div>
             <div>
               <span className="text-[#849588] block text-[10px] uppercase">Geometry Scheme</span>
-              <span className="text-white font-semibold">Quad-Dominant</span>
+              <span className="text-white font-semibold">Silhouette-Carved 360°</span>
             </div>
             <div>
               <span className="text-[#849588] block text-[10px] uppercase">Normal Deviation</span>
@@ -627,17 +737,54 @@ export default function Viewport3D({
               className="px-3 py-1 rounded-lg bg-[#FF7F50] hover:bg-[#e06336] text-white font-semibold text-xs transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
             >
               <span className="material-symbols-outlined text-xs">download</span>
-              <span>Download 3D Mesh (.obj)</span>
+              <span>Download OBJ</span>
             </button>
-            <button
-              onClick={() => alert('GLB & STL Export generated for 3D Slicers!')}
-              className="px-3 py-1 rounded-lg bg-[#1d2022] hover:bg-[#323537] text-[#bfc9c3] hover:text-white text-xs transition-colors border border-[#323537]/40"
-            >
-              Export GLB / STL
-            </button>
+            {reconstructionData?.glb_3d_path && (
+              <button
+                onClick={handleDownloadGlb}
+                className="px-3 py-1 rounded-lg bg-[#00f59b] hover:bg-[#00c97e] text-[#003920] font-semibold text-xs transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-xs">download</span>
+                <span>Download GLB</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Multi-View Projections Modal */}
+      {showMvsModal && multiviewUrl && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#191c1e] border border-[#323537] rounded-2xl max-w-3xl w-full p-5 flex flex-col gap-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#323537] pb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#00f59b]">view_carousel</span>
+                <h3 className="text-base font-bold text-white">InstantMesh 6-View Multi-View Projections</h3>
+              </div>
+              <button
+                onClick={() => setShowMvsModal(false)}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+            <p className="text-xs text-[#849588]">
+              InstantMesh synthesized these 6 sparse perspective camera views using diffusion, and fed them into the Large Reconstruction Model (LRM) to produce the watertight 3D mesh.
+            </p>
+            <div className="bg-black/60 rounded-xl p-2 flex items-center justify-center overflow-hidden border border-[#272a2d]">
+              <img src={multiviewUrl} alt="Multi-View Projections" className="max-h-[460px] object-contain rounded" />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowMvsModal(false)}
+                className="px-4 py-1.5 rounded-lg bg-[#FF7F50] text-white text-xs font-semibold"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

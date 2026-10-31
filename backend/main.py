@@ -120,6 +120,10 @@ class Generation25DResponse(BaseModel):
     depth_map_path: str
     normal_map_path: str
     relief_mesh_path: Optional[str] = None
+    concept_render_path: Optional[str] = None
+    concept_svg_path: Optional[str] = None
+    prompt_used: Optional[str] = None
+    gemini_backend: Optional[str] = None
     depth_stats: Dict[str, float]
     mesh_stats: Dict[str, Any]
     details: Dict[str, Any]
@@ -135,6 +139,8 @@ class FullPipelineResponse(BaseModel):
     depth_map_path: str
     normal_map_path: str
     relief_mesh_path: Optional[str] = None
+    concept_render_path: Optional[str] = None
+    concept_svg_path: Optional[str] = None
     reconstructed_3d_path: str
     format: str
     analysis: Optional[SketchAnalysisResult] = None
@@ -147,6 +153,8 @@ class ReconstructionResponse(BaseModel):
     original_image_path: str
     processed_image_path: str
     model_3d_path: str
+    glb_3d_path: Optional[str] = None
+    multiview_path: Optional[str] = None
     format: str
     analysis: Optional[SketchAnalysisResult] = None
     details: Dict[str, Any]
@@ -181,12 +189,13 @@ def health_check() -> Dict[str, Any]:
         "version": "1.3.0",
         "modules": [
             "OpenCV Preprocessing",
-            "Llama 3.2 Vision Understanding",
+            "Google Gemini Vision Understanding",
             "Foreground Isolation (rembg/OpenCV)",
             "2.5D Volumetric Generation (Depth/Normal/Relief)",
             "AI Image Refinement & Quality Validation",
             "3D Mesh Reconstruction (InstantMesh)",
         ],
+        "vision_provider": getattr(vision_config, "provider", "gemini"),
         "vision_model": vision_config.model,
         "vision_configured": bool(vision_config.api_key),
     }
@@ -324,14 +333,19 @@ def api_generate_25d(
     target_size: int = Query(320, description="Target resolution"),
     export_relief: bool = Query(True, description="Export watertight 3D relief mesh"),
     format: str = Query("obj", description="Relief mesh format (obj, glb)"),
+    prompt: Optional[str] = Query(
+        "Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.",
+        description="Prompt for Gemini 2.5D concept generation (using Key 2)",
+    ),
 ):
-    """Generates 2.5D Volumetric data: Monocular Depth Map, Normal Map, and 3D Relief Mesh."""
+    """Generates 2.5D Volumetric data: Monocular Depth Map, Normal Map, 3D Relief Mesh, and Gemini Concept Render."""
     # 1. Preprocess & Isolate Foreground
     iso_res = api_isolate_foreground(file=file, target_size=target_size)
 
     config = Generation25DConfig(
         export_relief_mesh=export_relief,
         relief_format=format,
+        prompt=prompt or "Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.",
     )
 
     try:
@@ -349,11 +363,15 @@ def api_generate_25d(
 
     return Generation25DResponse(
         success=True,
-        message="2.5D Depth, Normal map, and 3D relief mesh generated successfully.",
+        message="2.5D Depth, Normal map, 3D relief mesh, and Gemini concept render generated successfully.",
         original_image_path=iso_res.original_image_path,
         depth_map_path=gen_res.depth_map_path,
         normal_map_path=gen_res.normal_map_path,
         relief_mesh_path=gen_res.relief_mesh_path,
+        concept_render_path=gen_res.concept_render_path,
+        concept_svg_path=gen_res.concept_svg_path,
+        prompt_used=gen_res.prompt_used,
+        gemini_backend=gen_res.gemini_backend,
         depth_stats=gen_res.depth_stats,
         mesh_stats=gen_res.mesh_stats,
         details=gen_res.details,
@@ -482,6 +500,8 @@ def api_full_pipeline(
         depth_map_path=gen25d_res.depth_map_path,
         normal_map_path=gen25d_res.normal_map_path,
         relief_mesh_path=gen25d_res.relief_mesh_path,
+        concept_render_path=gen25d_res.concept_render_path,
+        concept_svg_path=gen25d_res.concept_svg_path,
         reconstructed_3d_path=recon_res.model_path,
         format=recon_res.format,
         analysis=analysis_res,
@@ -573,6 +593,8 @@ def api_reconstruct_sketch_to_3d(
         original_image_path=preprocess_result.original_image_path,
         processed_image_path=processed_path,
         model_3d_path=recon_result.model_path,
+        glb_3d_path=recon_result.glb_path,
+        multiview_path=recon_result.multiview_path,
         format=recon_result.format,
         analysis=analysis_result,
         details=recon_result.details,
