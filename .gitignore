@@ -1,0 +1,26 @@
+# Python & Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Pytest & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local outputs & user uploads
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
+outputs/preprocessing/*
+outputs/reconstructions/*
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
