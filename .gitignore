@@ -6,6 +6,10 @@ __pycache__/
 venv/
 ENV/
 
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+
 # Pytest & Coverage
 .pytest_cache/
 .coverage
@@ -18,6 +22,8 @@ outputs/*
 !outputs/.gitkeep
 outputs/preprocessing/*
 outputs/reconstructions/*
+outputs/foreground_isolation/*
+outputs/2.5d_generation/*
 
 # OS / Editor files
 .DS_Store
@@ -28,4 +34,3 @@ Thumbs.db
 # Graphify local machine paths and cache
 graphify-out/.graphify_*
 graphify-out/cache/
-
