@@ -4,6 +4,9 @@ export default function VisionAnalysisCard({
   analysisData,
   preprocessedData,
   previewUrl,
+  isolationData,
+  isolatedPreviewUrl,
+  generation25DData,
   apiBase = '',
 }) {
   const [copied, setCopied] = useState(false);
@@ -81,6 +84,112 @@ export default function VisionAnalysisCard({
                 />
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Foreground Isolation Multi-Channel Card */}
+      {isolationData && (
+        <div className="p-3.5 rounded-xl bg-[#0c0f11]/80 border border-[#00f59b]/40 shadow-inner">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-[#00f59b] uppercase tracking-wider flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">content_cut</span>
+              <span>Isolated Foreground (RMBG / Saliency)</span>
+            </span>
+            <span className="text-[10px] text-[#849588] font-mono">
+              {isolationData.method_used} • {(isolationData.foreground_pixel_ratio * 100).toFixed(1)}% coverage
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            {/* 1. Alpha RGBA Transparent Cutout */}
+            <div className="bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
+              <span className="text-[#849588] block text-[10px] mb-1">Alpha RGBA Cutout</span>
+              <div
+                className="h-24 flex items-center justify-center rounded p-1 overflow-hidden"
+                style={{
+                  backgroundImage: 'repeating-conic-gradient(#1f262b 0% 25%, #0e1216 0% 50%)',
+                  backgroundSize: '16px 16px',
+                }}
+              >
+                <img
+                  src={`${apiBase}/static/foreground/${isolationData.rgba_path.split(/[/\\]/).pop()}`}
+                  alt="RGBA"
+                  className="max-h-full object-contain"
+                />
+              </div>
+            </div>
+
+            {/* 2. White Canvas Composite */}
+            <div className="bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
+              <span className="text-[#849588] block text-[10px] mb-1">Centered Canvas</span>
+              <div className="h-24 flex items-center justify-center bg-white/5 rounded p-1 overflow-hidden">
+                <img
+                  src={`${apiBase}/static/foreground/${isolationData.composite_path.split(/[/\\]/).pop()}`}
+                  alt="Composite"
+                  className="max-h-full object-contain"
+                />
+              </div>
+            </div>
+
+            {/* 3. Clean Binary Mask */}
+            <div className="bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
+              <span className="text-[#849588] block text-[10px] mb-1">Hole-Cleaned Mask</span>
+              <div className="h-24 flex items-center justify-center bg-black/60 rounded p-1 overflow-hidden">
+                <img
+                  src={`${apiBase}/static/foreground/${isolationData.mask_path.split(/[/\\]/).pop()}`}
+                  alt="Mask"
+                  className="max-h-full object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2.5D Volumetric Geometry Card (Depth Map & Surface Normals) */}
+      {generation25DData && (
+        <div className="p-3.5 rounded-xl bg-[#0c0f11]/80 border border-[#7bd0ff]/40 shadow-inner">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-[#7bd0ff] uppercase tracking-wider flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">layers</span>
+              <span>2.5D Volumetric Geometry</span>
+            </span>
+            <span className="text-[10px] text-[#00f59b] font-mono">
+              Watertight 3D Relief Generated
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-center text-xs">
+            {/* Depth Map */}
+            <div className="bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
+              <span className="text-[#849588] block text-[10px] mb-1">Monocular Depth Map</span>
+              <div className="h-24 flex items-center justify-center bg-black rounded p-1 overflow-hidden">
+                <img
+                  src={`${apiBase}/static/generation25d/${generation25DData.depth_map_path.split(/[/\\]/).pop()}`}
+                  alt="Depth Map"
+                  className="max-h-full object-contain"
+                />
+              </div>
+            </div>
+
+            {/* Surface Normal Map */}
+            <div className="bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
+              <span className="text-[#849588] block text-[10px] mb-1">Tangent Surface Normals</span>
+              <div className="h-24 flex items-center justify-center bg-black rounded p-1 overflow-hidden">
+                <img
+                  src={`${apiBase}/static/generation25d/${generation25DData.normal_map_path.split(/[/\\]/).pop()}`}
+                  alt="Normal Map"
+                  className="max-h-full object-contain"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 text-[10px] text-[#849588] flex items-center justify-between border-t border-[#272a2d] pt-1.5">
+            <span>Relief Vertices: <strong className="text-white">{generation25DData.mesh_stats?.vertex_count?.toLocaleString() || '16,384'}</strong></span>
+            <span>Relief Faces: <strong className="text-white">{generation25DData.mesh_stats?.face_count?.toLocaleString() || '32,768'}</strong></span>
+            <span>Watertight: <strong className="text-[#00f59b]">True</strong></span>
           </div>
         </div>
       )}

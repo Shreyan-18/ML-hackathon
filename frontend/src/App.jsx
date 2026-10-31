@@ -22,6 +22,20 @@ export default function App() {
   const [targetSize, setTargetSize] = useState(320);
   const [debugMode, setDebugMode] = useState(false);
 
+  // Foreground Isolation States (Teammate backend integration)
+  const [isolateForeground, setIsolateForeground] = useState(false); // Disabled by default
+  const [isolationLoading, setIsolationLoading] = useState(false);
+  const [isolationError, setIsolationError] = useState(null);
+  const [isolationData, setIsolationData] = useState(null);
+  const [isolatedFile, setIsolatedFile] = useState(null);
+  const [isolatedPreviewUrl, setIsolatedPreviewUrl] = useState(null);
+  const [selectedInput, setSelectedInput] = useState('original'); // 'original' or 'isolated'
+
+  // 2.5D Volumetric Generation States
+  const [generation25DData, setGeneration25DData] = useState(null);
+  const [generation25DLoading, setGeneration25DLoading] = useState(false);
+  const [active3DTab, setActive3DTab] = useState('mesh3d'); // 'mesh3d' or 'relief25d'
+
   // Async API States
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -53,6 +67,152 @@ export default function App() {
         }
       }, 'image/png');
     });
+  };
+
+  // Helper to resolve the active image (isolated or original)
+  const getActiveFile = async () => {
+    if (isolateForeground && selectedInput === 'isolated' && isolatedFile) {
+      return isolatedFile;
+    }
+    if (selectedFile) {
+      return selectedFile;
+    }
+    return await getCanvasFile();
+  };
+
+  // Reset isolation cache when sketch changes
+  const handleResetIsolation = (triggerReisolate = false) => {
+    setIsolationData(null);
+    setIsolatedFile(null);
+    setIsolatedPreviewUrl(null);
+    setSelectedInput('original');
+    setIsolationError(null);
+
+    if (isolateForeground && triggerReisolate) {
+      setTimeout(() => {
+        handleIsolateForeground();
+      }, 50);
+    }
+  };
+
+  // Foreground Isolation Trigger
+  const handleIsolateForeground = async (overrideFile = null) => {
+    setIsolationError(null);
+    setIsolationLoading(true);
+
+    try {
+      let fileToUpload = overrideFile || selectedFile;
+      if (!fileToUpload) {
+        fileToUpload = await getCanvasFile();
+      }
+
+      if (!fileToUpload) {
+        throw new Error('Please draw or upload a sketch first before isolating foreground.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+
+      const res = await fetch(
+        `${API_BASE}/api/foreground-isolate?target_size=${targetSize}&method=auto`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      setIsolationData(data);
+
+      const rgbaFilename = data.rgba_path.split(/[/\\]/).pop();
+      const compositeFilename = data.composite_path.split(/[/\\]/).pop();
+      const rgbaUrl = `${API_BASE}/static/foreground/${rgbaFilename}`;
+      const compositeUrl = `${API_BASE}/static/foreground/${compositeFilename}`;
+
+      setIsolatedPreviewUrl(rgbaUrl);
+
+      // Cache isolated composite file for 2.5D and 3D pipelines to avoid duplicate processing
+      try {
+        const blobRes = await fetch(compositeUrl);
+        if (blobRes.ok) {
+          const blob = await blobRes.blob();
+          const file = new File([blob], `isolated_${compositeFilename}`, { type: 'image/png' });
+          setIsolatedFile(file);
+        }
+      } catch (cacheErr) {
+        console.warn('Could not cache isolated blob locally; fallback to original:', cacheErr);
+      }
+
+      setSelectedInput('isolated');
+      setSuccessToast('Foreground isolated! Alpha transparency preserved.');
+      setTimeout(() => setSuccessToast(null), 3000);
+    } catch (err) {
+      console.error(err);
+      setIsolationError(err.message || 'Foreground isolation failed.');
+    } finally {
+      setIsolationLoading(false);
+    }
+  };
+
+  // Toggle Isolate Foreground Switch
+  const handleToggleIsolateForeground = (enabled) => {
+    setIsolateForeground(enabled);
+    if (enabled) {
+      if (isolationData) {
+        setSelectedInput('isolated');
+      } else {
+        handleIsolateForeground();
+      }
+    } else {
+      setSelectedInput('original');
+    }
+  };
+
+  // Perform 2.5D Volumetric Generation (Depth Map, Surface Normals, 3D Relief Mesh)
+  const handleGenerate25D = async () => {
+    setError(null);
+    setGeneration25DLoading(true);
+    setStatusMessage('Synthesizing 2.5D Depth, Normals & Watertight Relief Mesh...');
+
+    try {
+      const fileToUpload = await getActiveFile();
+      if (!fileToUpload) {
+        throw new Error('Please draw or upload a sketch first.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+
+      const res = await fetch(
+        `${API_BASE}/api/generate-25d?target_size=${targetSize}&export_relief=true&format=obj`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      setGeneration25DData(data);
+      setActive3DTab('relief25d');
+      setSuccessToast('2.5D Volumetric Relief Mesh & Surface Normals Synthesized!');
+      setTimeout(() => setSuccessToast(null), 3500);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || '2.5D generation failed.');
+    } finally {
+      setGeneration25DLoading(false);
+      setStatusMessage('');
+    }
   };
 
   // Perform Vision Understanding with Llama 3.2 Vision
@@ -105,11 +265,7 @@ export default function App() {
     setStatusMessage('Synthesizing Mesh (SDF & InstantMesh LRM)...');
 
     try {
-      let fileToUpload = selectedFile;
-      if (!fileToUpload) {
-        fileToUpload = await getCanvasFile();
-      }
-
+      const fileToUpload = await getActiveFile();
       if (!fileToUpload) {
         throw new Error('Please draw or upload a sketch first.');
       }
@@ -132,6 +288,7 @@ export default function App() {
 
       const data = await res.json();
       setReconstructionData(data);
+      setActive3DTab('mesh3d');
       if (data.analysis) {
         setAnalysisData(data.analysis);
       }
@@ -214,8 +371,10 @@ export default function App() {
           {/* Studio Workspace: Drawing & File Input */}
           <VectorStudio
             onGenerate3D={handleGenerate3D}
+            onGenerate25D={handleGenerate25D}
             onAnalyzeVision={handleAnalyzeVision}
             loading={loading}
+            generation25DLoading={generation25DLoading}
             statusMessage={statusMessage}
             currentSketchType={currentSketchType}
             setCurrentSketchType={setCurrentSketchType}
@@ -228,6 +387,17 @@ export default function App() {
             setSelectedFile={setSelectedFile}
             previewUrl={previewUrl}
             setPreviewUrl={setPreviewUrl}
+            // Foreground Isolation Props
+            isolateForeground={isolateForeground}
+            onToggleIsolateForeground={handleToggleIsolateForeground}
+            onIsolateForeground={handleIsolateForeground}
+            isolationLoading={isolationLoading}
+            isolationError={isolationError}
+            isolationData={isolationData}
+            isolatedPreviewUrl={isolatedPreviewUrl}
+            selectedInput={selectedInput}
+            onSelectInput={setSelectedInput}
+            onResetIsolation={handleResetIsolation}
           />
 
           {/* Dual Panel Grid: 3D Viewport (8 cols) & Llama 3.2 Vision Analysis (4 cols) */}
@@ -236,6 +406,9 @@ export default function App() {
             <div className="lg:col-span-8">
               <Viewport3D
                 reconstructionData={reconstructionData}
+                generation25DData={generation25DData}
+                active3DTab={active3DTab}
+                setActive3DTab={setActive3DTab}
                 sketchType={currentSketchType}
                 apiBase={API_BASE}
               />
@@ -247,6 +420,9 @@ export default function App() {
                 analysisData={analysisData}
                 preprocessedData={preprocessedData}
                 previewUrl={previewUrl}
+                isolationData={isolationData}
+                isolatedPreviewUrl={isolatedPreviewUrl}
+                generation25DData={generation25DData}
                 apiBase={API_BASE}
               />
             </div>

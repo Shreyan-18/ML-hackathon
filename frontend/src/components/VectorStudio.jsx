@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 export default function VectorStudio({
   onGenerate3D,
+  onGenerate25D,
   onAnalyzeVision,
   loading,
+  generation25DLoading = false,
   statusMessage,
   currentSketchType,
   setCurrentSketchType,
@@ -16,6 +18,17 @@ export default function VectorStudio({
   setSelectedFile,
   previewUrl,
   setPreviewUrl,
+  // Foreground Isolation Props
+  isolateForeground = false,
+  onToggleIsolateForeground,
+  onIsolateForeground,
+  isolationLoading = false,
+  isolationError = null,
+  isolationData = null,
+  isolatedPreviewUrl = null,
+  selectedInput = 'original',
+  onSelectInput,
+  onResetIsolation,
 }) {
   const [activeTab, setActiveTab] = useState('sketch'); // 'sketch' or 'upload'
   const [brushColor, setBrushColor] = useState('#FF7F50');
@@ -24,6 +37,7 @@ export default function VectorStudio({
   const [targetQuality, setTargetQuality] = useState('mid'); // 'low', 'mid', 'ultra'
   const [isDrawing, setIsDrawing] = useState(false);
   const [history, setHistory] = useState([]);
+  const [previewMode, setPreviewMode] = useState('isolated'); // 'isolated', 'original', 'split'
 
   // Available palette matching design
   const palette = [
@@ -80,6 +94,7 @@ export default function VectorStudio({
     setSelectedFile(null);
     setPreviewUrl(null);
     setCurrentSketchType('custom');
+    if (onResetIsolation) onResetIsolation(false);
   };
 
   // Draw Sample Drone Sketch (Matching code.html design)
@@ -246,6 +261,7 @@ export default function VectorStudio({
         setPreviewUrl(URL.createObjectURL(blob));
         setCurrentSketchType(type);
         pushHistory();
+        if (onResetIsolation) onResetIsolation(true);
       }
     });
   };
@@ -314,6 +330,7 @@ export default function VectorStudio({
             setSelectedFile(file);
             setPreviewUrl(URL.createObjectURL(blob));
             setCurrentSketchType('custom');
+            if (onResetIsolation) onResetIsolation(true);
           }
         });
       }
@@ -336,6 +353,7 @@ export default function VectorStudio({
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setCurrentSketchType('uploaded');
+      if (onResetIsolation) onResetIsolation(true);
     }
   };
 
@@ -372,13 +390,49 @@ export default function VectorStudio({
 
           <div className="h-5 w-px bg-[#323537]/50 hidden sm:block"></div>
 
+          {/* Isolate Foreground Toggle Switch (Optional, Disabled by default) */}
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#0c0f11] border border-[#323537]/80 hover:border-[#00f59b]/50 transition-all shadow-inner">
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                id="isolate-foreground-checkbox"
+                checked={isolateForeground}
+                onChange={(e) => onToggleIsolateForeground && onToggleIsolateForeground(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-8 h-4 bg-[#272a2d] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#00f59b]"></div>
+              <span className="ml-2 text-xs font-semibold text-white flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm text-[#00f59b]">content_cut</span>
+                <span>Isolate Foreground</span>
+              </span>
+            </label>
+            <span
+              className="text-[10px] text-[#849588] hidden lg:inline border-l border-[#323537]/60 pl-2"
+              title="Remove the background and isolate the main object."
+            >
+              Remove background & isolate main object
+            </span>
+            {isolationLoading && (
+              <span className="material-symbols-outlined text-xs text-[#00f59b] animate-spin" title="Isolating foreground...">
+                sync
+              </span>
+            )}
+            {isolateForeground && isolationData && (
+              <span className="px-2 py-0.2 rounded-full bg-[#00f59b]/20 text-[#00f59b] text-[10px] font-semibold border border-[#00f59b]/40">
+                {selectedInput === 'isolated' ? 'Active' : 'Standby'}
+              </span>
+            )}
+          </div>
+
+          <div className="h-5 w-px bg-[#323537]/50 hidden md:block"></div>
+
           {/* Realtime badges */}
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00f59b]/10 border border-[#00f59b]/30 text-[#00f59b] text-[11px] font-semibold">
               <span className="w-2 h-2 rounded-full bg-[#00f59b] animate-ping"></span>
               Realtime Neural Trace
             </span>
-            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1d2022] text-[#849588] text-[11px] border border-[#272a2d]">
+            <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1d2022] text-[#849588] text-[11px] border border-[#272a2d]">
               <span className="material-symbols-outlined text-xs text-[#FF7F50]">grid_goldenratio</span>
               <span>2048 x 2048 SDF Grid</span>
             </span>
@@ -535,6 +589,22 @@ export default function VectorStudio({
         </div>
       )}
 
+      {/* Isolation Error Alert Banner */}
+      {isolationError && isolateForeground && (
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-[#93000a]/20 border border-[#ffb4ab]/30 text-[#ffb4ab] text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">warning</span>
+            <span>Foreground Isolation Warning: {isolationError}</span>
+          </div>
+          <button
+            onClick={() => onIsolateForeground && onIsolateForeground()}
+            className="px-2.5 py-1 rounded bg-[#ffb4ab]/20 hover:bg-[#ffb4ab]/30 text-white font-medium transition-colors"
+          >
+            Retry Isolation
+          </button>
+        </div>
+      )}
+
       {/* Main Canvas Area */}
       {activeTab === 'sketch' ? (
         <div className="relative w-full h-[460px] bg-[#080a0c] overflow-hidden flex items-center justify-center select-none">
@@ -542,7 +612,7 @@ export default function VectorStudio({
           <div className="absolute inset-0 bg-[radial-gradient(#1f262b_1px,transparent_1px)] [background-size:24px_24px] opacity-70 pointer-events-none"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-[#FF7F50]/5 via-transparent to-[#00f59b]/5 pointer-events-none"></div>
 
-          {/* HTML5 Canvas */}
+          {/* HTML5 Canvas (Drawing Area) */}
           <canvas
             ref={canvasRef}
             onMouseDown={startDrawing}
@@ -552,8 +622,159 @@ export default function VectorStudio({
             onTouchStart={startDrawing}
             onTouchMove={draw}
             onTouchEnd={stopDrawing}
-            className="w-full h-full cursor-crosshair block relative z-10 touch-none"
+            className={`w-full h-full cursor-crosshair block relative z-10 touch-none ${
+              isolateForeground && isolatedPreviewUrl && previewMode === 'isolated' ? 'invisible pointer-events-none' : ''
+            }`}
           />
+
+          {/* Foreground Isolation Preview Overlay (Alpha Transparency Preserved) */}
+          {isolateForeground && isolatedPreviewUrl && previewMode === 'isolated' && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#080a0c]/90 backdrop-blur-sm p-4">
+              <div
+                className="relative max-w-md max-h-[360px] w-full h-full rounded-2xl border border-[#00f59b]/40 overflow-hidden flex items-center justify-center shadow-2xl"
+                style={{
+                  backgroundImage:
+                    'repeating-conic-gradient(#1f262b 0% 25%, #0e1216 0% 50%)',
+                  backgroundPosition: '50%',
+                  backgroundSize: '24px 24px',
+                }}
+              >
+                <img
+                  src={isolatedPreviewUrl}
+                  alt="Isolated Foreground (Alpha Channel)"
+                  className="max-h-[300px] max-w-[300px] object-contain drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)]"
+                />
+                <div className="absolute bottom-3 left-3 bg-[#0c0f11]/90 backdrop-blur-md px-3 py-1 rounded-md text-[11px] text-[#00f59b] border border-[#00f59b]/30 font-mono flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-xs">opacity</span>
+                  <span>Alpha Transparency Preserved • 320x320</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Split Mode Comparison Overlay */}
+          {isolateForeground && isolatedPreviewUrl && previewMode === 'split' && (
+            <div className="absolute inset-0 z-20 grid grid-cols-2 gap-4 p-6 bg-[#080a0c]/90 backdrop-blur-sm items-center justify-center">
+              {/* Left: Original Sketch */}
+              <div className="flex flex-col items-center justify-center h-full p-3 rounded-xl bg-[#0c0f11] border border-[#323537]">
+                <span className="text-[11px] font-semibold text-[#849588] mb-2 uppercase tracking-wider flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs text-[#FF7F50]">draw</span>
+                  <span>Original Sketch</span>
+                </span>
+                <div className="w-full h-64 flex items-center justify-center bg-black/40 rounded-lg overflow-hidden">
+                  <img src={previewUrl} alt="Original" className="max-h-full max-w-full object-contain" />
+                </div>
+              </div>
+
+              {/* Right: Isolated Cutout with Checkerboard */}
+              <div className="flex flex-col items-center justify-center h-full p-3 rounded-xl bg-[#0c0f11] border border-[#00f59b]/40">
+                <span className="text-[11px] font-semibold text-[#00f59b] mb-2 uppercase tracking-wider flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">content_cut</span>
+                  <span>Isolated Object (Alpha)</span>
+                </span>
+                <div
+                  className="w-full h-64 flex items-center justify-center rounded-lg overflow-hidden"
+                  style={{
+                    backgroundImage: 'repeating-conic-gradient(#1f262b 0% 25%, #0e1216 0% 50%)',
+                    backgroundSize: '20px 20px',
+                  }}
+                >
+                  <img src={isolatedPreviewUrl} alt="Isolated" className="max-h-full max-w-full object-contain" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Isolated Output Comparison & Selection Toolbar */}
+          {isolateForeground && isolatedPreviewUrl && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-1.5 rounded-2xl bg-[#0c0f11]/95 backdrop-blur-xl border border-[#00f59b]/40 shadow-[0_4px_24px_rgba(0,0,0,0.6)] text-xs flex-wrap justify-center">
+              {/* Preview Mode Selector */}
+              <div className="flex items-center gap-1 bg-[#191c1e] p-1 rounded-xl border border-[#272a2d]">
+                <button
+                  onClick={() => setPreviewMode('isolated')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    previewMode === 'isolated'
+                      ? 'bg-[#00f59b] text-[#003920] shadow-[0_0_12px_rgba(0,245,155,0.4)]'
+                      : 'text-[#bfc9c3] hover:text-white'
+                  }`}
+                  title="View transparent isolated subject"
+                >
+                  <span className="material-symbols-outlined text-sm">filter_vintage</span>
+                  <span>Isolated (Alpha)</span>
+                </button>
+
+                <button
+                  onClick={() => setPreviewMode('original')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    previewMode === 'original'
+                      ? 'bg-[#FF7F50] text-white shadow-[0_0_12px_rgba(255,127,80,0.4)]'
+                      : 'text-[#bfc9c3] hover:text-white'
+                  }`}
+                  title="View original drawing canvas"
+                >
+                  <span className="material-symbols-outlined text-sm">draw</span>
+                  <span>Original</span>
+                </button>
+
+                <button
+                  onClick={() => setPreviewMode('split')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    previewMode === 'split'
+                      ? 'bg-[#7bd0ff] text-[#002b40] shadow-[0_0_12px_rgba(123,208,255,0.4)]'
+                      : 'text-[#bfc9c3] hover:text-white'
+                  }`}
+                  title="Compare original and isolated side-by-side"
+                >
+                  <span className="material-symbols-outlined text-sm">vertical_split</span>
+                  <span>Compare</span>
+                </button>
+              </div>
+
+              <div className="h-5 w-px bg-[#323537] hidden sm:block"></div>
+
+              {/* Input Selection Action: Use Isolated vs Revert to Original */}
+              {selectedInput === 'isolated' ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#00f59b]/20 text-[#00f59b] text-[11px] font-semibold border border-[#00f59b]/40 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">check_circle</span>
+                    <span>Using Isolated for 2.5D/3D</span>
+                  </span>
+                  <button
+                    onClick={() => onSelectInput && onSelectInput('original')}
+                    className="px-2.5 py-1 rounded-lg bg-[#1d2022] hover:bg-[#272a2d] text-[#bfc9c3] hover:text-white text-[11px] font-medium border border-[#323537]/60 transition-colors"
+                    title="Revert back to the original sketch for 2.5D and 3D generation"
+                  >
+                    Revert to Original
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#FF7F50]/20 text-[#FF7F50] text-[11px] font-semibold border border-[#FF7F50]/40 flex items-center gap-1">
+                    <span>Using Original Sketch</span>
+                  </span>
+                  <button
+                    onClick={() => onSelectInput && onSelectInput('isolated')}
+                    className="px-2.5 py-1 rounded-lg bg-[#00f59b]/25 hover:bg-[#00f59b]/35 text-[#00f59b] text-[11px] font-semibold border border-[#00f59b]/50 transition-colors shadow-sm"
+                    title="Use isolated foreground cutout for 2.5D and 3D generation"
+                  >
+                    Continue with Isolated
+                  </button>
+                </div>
+              )}
+
+              {/* Re-isolate Button */}
+              <button
+                onClick={() => onIsolateForeground && onIsolateForeground()}
+                disabled={isolationLoading}
+                className="p-1 rounded-lg hover:bg-[#272a2d] text-[#849588] hover:text-[#00f59b] transition-colors"
+                title="Re-run Foreground Isolation on current sketch"
+              >
+                <span className={`material-symbols-outlined text-sm ${isolationLoading ? 'animate-spin' : ''}`}>
+                  refresh
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* Floating UI Overlays */}
           <div className="pointer-events-none absolute top-3 left-4 z-20 flex items-center gap-2 bg-[#0c0f11]/85 backdrop-blur-md px-3 py-1 rounded-full border border-[#323537]/40 text-xs text-[#849588]">
@@ -594,12 +815,41 @@ export default function VectorStudio({
           </label>
 
           {previewUrl && (
-            <div className="mt-4 p-2 rounded-xl bg-[#191c1e] border border-[#272a2d] flex items-center gap-3">
-              <img src={previewUrl} alt="Upload preview" className="h-16 w-16 object-contain rounded-lg bg-white/10" />
-              <div className="text-left text-xs">
-                <p className="font-medium text-white">{selectedFile?.name || 'Uploaded Sketch'}</p>
-                <p className="text-[#849588]">Ready for 3D Neural Synthesis</p>
+            <div className="mt-4 p-3 rounded-xl bg-[#191c1e] border border-[#272a2d] flex items-center justify-between gap-4 max-w-xl w-full">
+              <div className="flex items-center gap-3">
+                <img src={previewUrl} alt="Upload preview" className="h-16 w-16 object-contain rounded-lg bg-white/10" />
+                <div className="text-left text-xs">
+                  <p className="font-medium text-white">{selectedFile?.name || 'Uploaded Sketch'}</p>
+                  <p className="text-[#849588]">Original Upload</p>
+                </div>
               </div>
+
+              {isolatedPreviewUrl && isolateForeground && (
+                <div className="flex items-center gap-3 pl-4 border-l border-[#272a2d]">
+                  <div
+                    className="h-16 w-16 rounded-lg border border-[#00f59b]/40 flex items-center justify-center overflow-hidden"
+                    style={{
+                      backgroundImage: 'repeating-conic-gradient(#1f262b 0% 25%, #0e1216 0% 50%)',
+                      backgroundSize: '16px 16px',
+                    }}
+                  >
+                    <img src={isolatedPreviewUrl} alt="Isolated" className="max-h-full object-contain" />
+                  </div>
+                  <div className="text-left text-xs">
+                    <span className="text-[#00f59b] font-semibold block">Foreground Isolated</span>
+                    <button
+                      onClick={() => onSelectInput && onSelectInput(selectedInput === 'isolated' ? 'original' : 'isolated')}
+                      className={`text-[10px] mt-1 px-2 py-0.5 rounded font-medium border ${
+                        selectedInput === 'isolated'
+                          ? 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
+                          : 'bg-[#1d2022] text-[#bfc9c3] border-[#323537]'
+                      }`}
+                    >
+                      {selectedInput === 'isolated' ? '✓ Selected (Click to Revert)' : 'Click to Select'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -668,30 +918,50 @@ export default function VectorStudio({
         </div>
 
         {/* Right: Compute Status & Primary Generation Buttons */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2 text-[#849588] text-xs hidden sm:flex">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF7F50] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF7F50]"></span>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Active Reconstruction Input Indicator */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#111416] border border-[#323537]/50 text-[11px] text-[#849588]">
+            <span>Active Pipeline Input:</span>
+            <span className={isolateForeground && selectedInput === 'isolated' ? 'text-[#00f59b] font-semibold' : 'text-white'}>
+              {isolateForeground && selectedInput === 'isolated' ? 'Isolated Cutout' : 'Original Sketch'}
             </span>
-            <span>Compute Node Idle • 1 Spark</span>
           </div>
 
           {/* Llama 3.2 Vision Analysis Button */}
           <button
             onClick={onAnalyzeVision}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#1d2022] hover:bg-[#272a2d] border border-[#00f59b]/40 text-[#6ffbbe] text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+            disabled={loading || generation25DLoading}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#1d2022] hover:bg-[#272a2d] border border-[#00f59b]/40 text-[#6ffbbe] text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-base text-[#00f59b]">neurology</span>
-            <span>Analyze with Llama 3.2 Vision</span>
+            <span>Vision Analysis</span>
+          </button>
+
+          {/* Generate 2.5D Relief Button */}
+          <button
+            onClick={onGenerate25D}
+            disabled={loading || generation25DLoading}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#111416] hover:bg-[#1d2022] border border-[#7bd0ff]/50 text-[#7bd0ff] text-xs font-semibold shadow-[0_0_16px_rgba(123,208,255,0.18)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
+            title="Generate Monocular Depth Map, Surface Normals & 3D Watertight Relief Mesh"
+          >
+            {generation25DLoading ? (
+              <>
+                <span className="material-symbols-outlined text-base animate-spin">refresh</span>
+                <span>Generating 2.5D...</span>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-base">layers</span>
+                <span>Generate 2.5D Relief</span>
+              </>
+            )}
           </button>
 
           {/* Generate 3D Asset Now Button */}
           <button
             onClick={onGenerate3D}
-            disabled={loading}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#FF7F50] hover:bg-[#e06336] text-white text-sm font-semibold shadow-[0_0_28px_rgba(255,127,80,0.55)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
+            disabled={loading || generation25DLoading}
+            className="flex items-center gap-2 px-6 py-2 rounded-full bg-[#FF7F50] hover:bg-[#e06336] text-white text-sm font-semibold shadow-[0_0_28px_rgba(255,127,80,0.55)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <>

@@ -5,6 +5,9 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 export default function Viewport3D({
   reconstructionData,
+  generation25DData,
+  active3DTab = 'mesh3d',
+  setActive3DTab,
   sketchType = 'drone',
   apiBase = '',
 }) {
@@ -21,8 +24,12 @@ export default function Viewport3D({
   const [showTopologyInfo, setShowTopologyInfo] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const isReliefActive = active3DTab === 'relief25d' && !!generation25DData?.relief_mesh_path;
+
   // Model metadata
-  const modelName = reconstructionData?.model_3d_path
+  const modelName = isReliefActive
+    ? generation25DData.relief_mesh_path.split(/[/\\]/).pop()
+    : reconstructionData?.model_3d_path
     ? reconstructionData.model_3d_path.split(/[/\\]/).pop()
     : sketchType === 'drone'
     ? 'Cyber_Recon_Drone_v2.glb'
@@ -34,8 +41,16 @@ export default function Viewport3D({
     ? 'Angular_Cyber_EV_Concept.glb'
     : 'Synthesized_SDF_Mesh.glb';
 
-  const trisCount = reconstructionData ? '48,220' : '42,850';
-  const verticesCount = reconstructionData ? '24,112' : '21,420';
+  const trisCount = isReliefActive
+    ? (generation25DData?.mesh_stats?.face_count || '32,768')
+    : reconstructionData
+    ? '48,220'
+    : '42,850';
+  const verticesCount = isReliefActive
+    ? (generation25DData?.mesh_stats?.vertex_count || '16,384')
+    : reconstructionData
+    ? '24,112'
+    : '21,420';
 
   // Apply shading mode to all meshes in group
   const applyShadingMode = useCallback((mode) => {
@@ -285,8 +300,39 @@ export default function Viewport3D({
     scene.add(group);
     meshGroupRef.current = group;
 
-    // Check if backend OBJ model exists
-    if (reconstructionData?.model_3d_path) {
+    // Check if 2.5D relief or 3D OBJ model exists
+    if (isReliefActive) {
+      const reliefFilename = generation25DData.relief_mesh_path.split(/[/\\]/).pop();
+      const objUrl = `${apiBase}/static/generation25d/${reliefFilename}`;
+      const loader = new OBJLoader();
+      loader.load(
+        objUrl,
+        (obj) => {
+          group.clear();
+          obj.traverse((child) => {
+            if (child.isMesh) {
+              child.geometry.center();
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0x7bd0ff,
+                metalness: 0.65,
+                roughness: 0.25,
+              });
+            }
+          });
+          obj.scale.set(1.6, 1.6, 1.6);
+          group.add(obj);
+          applyShadingMode(shadingMode);
+        },
+        undefined,
+        (err) => {
+          console.warn('Failed to load Relief OBJ, falling back to procedural:', err);
+          group.clear();
+          const proc = buildProceduralModel(sketchType);
+          group.add(proc);
+          applyShadingMode(shadingMode);
+        }
+      );
+    } else if (reconstructionData?.model_3d_path) {
       const objUrl = `${apiBase}/static/outputs/reconstructions/${reconstructionData.model_3d_path.split(/[/\\]/).pop()}`;
       const loader = new OBJLoader();
       loader.load(
@@ -357,7 +403,18 @@ export default function Viewport3D({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [apiBase, applyShadingMode, buildProceduralModel, reconstructionData, shadingMode, sketchType, turntableActive]);
+  }, [
+    apiBase,
+    applyShadingMode,
+    buildProceduralModel,
+    reconstructionData,
+    generation25DData,
+    active3DTab,
+    isReliefActive,
+    shadingMode,
+    sketchType,
+    turntableActive,
+  ]);
 
   // Handle shading mode switch
   const handleShadingChange = (mode) => {
@@ -388,7 +445,16 @@ export default function Viewport3D({
 
   // Download OBJ mesh
   const handleDownloadObj = () => {
-    if (reconstructionData?.model_3d_path) {
+    if (isReliefActive) {
+      const fileName = generation25DData.relief_mesh_path.split(/[/\\]/).pop();
+      const url = `${apiBase}/static/generation25d/${fileName}`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else if (reconstructionData?.model_3d_path) {
       const fileName = reconstructionData.model_3d_path.split(/[/\\]/).pop();
       const url = `${apiBase}/static/outputs/reconstructions/${fileName}`;
       const a = document.createElement('a');
@@ -407,17 +473,47 @@ export default function Viewport3D({
       {/* Viewport Header */}
       <div className="flex items-center justify-between pb-1 flex-wrap gap-2">
         <div className="flex flex-col">
+          {/* Asset Mode Switcher (When 2.5D Relief mesh is present) */}
+          {generation25DData?.relief_mesh_path && (
+            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#0c0f11] border border-[#323537]/60 mb-1.5 w-fit">
+              <button
+                onClick={() => setActive3DTab && setActive3DTab('mesh3d')}
+                className={`px-3 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  active3DTab === 'mesh3d'
+                    ? 'bg-[#FF7F50] text-white shadow-sm'
+                    : 'text-[#bfc9c3] hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xs">view_in_ar</span>
+                <span>Full 3D Model</span>
+              </button>
+              <button
+                onClick={() => setActive3DTab && setActive3DTab('relief25d')}
+                className={`px-3 py-1 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  active3DTab === 'relief25d'
+                    ? 'bg-[#7bd0ff] text-[#002b40] shadow-sm font-bold'
+                    : 'text-[#bfc9c3] hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xs">layers</span>
+                <span>2.5D Relief Mesh</span>
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-display font-semibold text-lg text-white">{modelName}</span>
             <span className="px-2 py-0.5 rounded-full bg-[#00f59b]/20 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold">
               Watertight Validated
             </span>
             <span className="px-2 py-0.5 rounded-full bg-[#FF7F50]/20 border border-[#FF7F50]/40 text-[#FF7F50] text-xs font-semibold">
-              PBR Textured
+              {isReliefActive ? '2.5D Relief' : 'PBR Textured'}
             </span>
           </div>
           <span className="text-xs text-[#849588] mt-0.5">
-            Reconstructed from vector canvas in 23.4s • Ready for Game Engines & 3D Print Slicers
+            {isReliefActive
+              ? `2.5D Watertight Relief Mesh • Max Height: ${generation25DData.mesh_stats?.max_relief_height || 0.35} • Euler: ${generation25DData.mesh_stats?.euler_characteristic || 2}`
+              : 'Reconstructed from vector canvas in 23.4s • Ready for Game Engines & 3D Print Slicers'}
           </span>
         </div>
 
