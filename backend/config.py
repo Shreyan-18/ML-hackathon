@@ -140,7 +140,7 @@ class ForegroundIsolationConfig:
     """Settings for foreground extraction and background removal."""
 
     method: str = "auto"  # "auto", "rembg", or "contour"
-    rembg_model: str = "birefnet-general"  # or "isnet-general-use", "u2net"
+    rembg_model: str = os.getenv("REMBG_MODEL", "bria-rmbg")  # "bria-rmbg", "u2net", "isnet-general-use"
     clean_mask_holes: bool = True
     morphology_kernel_size: int = 5
     min_contour_area_ratio: float = 0.005  # filters specks < 0.5% image area

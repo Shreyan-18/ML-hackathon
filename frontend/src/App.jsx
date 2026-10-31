@@ -559,10 +559,10 @@ export default function App() {
             setConceptPrompt={setConceptPrompt}
           />
 
-          {/* Dual Panel Grid: 3D Viewport (8 cols) & Llama 3.2 Vision Analysis (4 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left: Interactive Three.js 3D Viewport (8 cols) */}
-            <div className="lg:col-span-8">
+          {/* Vertical Layout: 3D Image Reconstruction Viewport First, Then Vision Understanding Below */}
+          <div className="flex flex-col gap-6 w-full">
+            {/* 1. Interactive Three.js 3D Viewport (Full Width) */}
+            <div className="w-full">
               <Viewport3D
                 reconstructionData={reconstructionData}
                 generation25DData={generation25DData}
@@ -573,8 +573,8 @@ export default function App() {
               />
             </div>
 
-            {/* Right: Llama 3.2 Vision Understanding Analysis (4 cols) */}
-            <div className="lg:col-span-4">
+            {/* 2. Llama 3.2 Vision Understanding Analysis & 2.5D Volumetric Geometry (Full Width) */}
+            <div className="w-full">
               <VisionAnalysisCard
                 analysisData={analysisData}
                 preprocessedData={preprocessedData}

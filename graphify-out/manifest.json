@@ -6,9 +6,9 @@
     "semantic_hash": "dd9eca72aea5bfa6c9c382e3fcbcc24a"
   },
   "backend/config.py": {
-    "mtime": 1793477234.6204314,
-    "seen": 1793477277.1900191,
-    "ast_hash": "167452b0a1a762d0e9a3d34739863cc7",
+    "mtime": 1793478841.2095556,
+    "seen": 1793478947.22144,
+    "ast_hash": "5efb122d3e35d015aa6ed3ac2d60b814",
     "semantic_hash": ""
   },
   "backend/main.py": {
@@ -72,10 +72,10 @@
     "semantic_hash": "10bc5c2a80bc399ee0b81dca21a7ff7b"
   },
   "frontend/src/App.jsx": {
-    "mtime": 1793476223.259444,
-    "seen": 1793476887.184364,
-    "ast_hash": "f042a771f0a906aca6669ef0be214cfe",
-    "semantic_hash": "f042a771f0a906aca6669ef0be214cfe"
+    "mtime": 1793481676.7193801,
+    "seen": 1793481825.926667,
+    "ast_hash": "c49597ed3567dbc56b3a0b73050d7923",
+    "semantic_hash": ""
   },
   "frontend/src/main.jsx": {
     "mtime": 1793442226.5071294,
@@ -126,28 +126,28 @@
     "semantic_hash": "c414f9560720dbdf3d62637e7d848bc9"
   },
   "frontend/src/components/VectorStudio.jsx": {
-    "mtime": 1793476228.7747614,
-    "seen": 1793476887.184366,
-    "ast_hash": "1e92189c3d2a80b8ca4da59135433ec1",
-    "semantic_hash": "1e92189c3d2a80b8ca4da59135433ec1"
+    "mtime": 1793481813.6240177,
+    "seen": 1793481825.9266691,
+    "ast_hash": "b9faa43829105d35a99164c6c5ed9caa",
+    "semantic_hash": ""
   },
   "frontend/src/components/Viewport3D.jsx": {
-    "mtime": 1793475006.451708,
-    "seen": 1793476887.1843672,
-    "ast_hash": "c480a43a469c80a2821a6d59a848d449",
-    "semantic_hash": "c480a43a469c80a2821a6d59a848d449"
+    "mtime": 1793481650.583939,
+    "seen": 1793481825.9266691,
+    "ast_hash": "ba7c229e9b4a8ec0080f56eeef86a28a",
+    "semantic_hash": ""
   },
   "frontend/src/components/VisionAnalysisCard.jsx": {
-    "mtime": 1793476285.3962286,
-    "seen": 1793476887.1843681,
-    "ast_hash": "12cd8f378bb7796a7b9418fda3601e1a",
-    "semantic_hash": "12cd8f378bb7796a7b9418fda3601e1a"
+    "mtime": 1793481660.1702156,
+    "seen": 1793481825.92667,
+    "ast_hash": "7bab6d5094137543e4606567157ca799",
+    "semantic_hash": ""
   },
   "backend/foreground_isolation.py": {
-    "mtime": 1793474716.481016,
-    "seen": 1793476887.184358,
-    "ast_hash": "1d086915a1c77d03b154ea45f8e9c277",
-    "semantic_hash": "1d086915a1c77d03b154ea45f8e9c277"
+    "mtime": 1793478850.3469627,
+    "seen": 1793478947.221441,
+    "ast_hash": "d93dafae959748806c1c8e19a7174a74",
+    "semantic_hash": ""
   },
   "backend/generation_25d.py": {
     "mtime": 1793477242.1267052,
@@ -209,10 +209,16 @@
     "ast_hash": "ee510feb2e9f9fae7a330450d4c97e39",
     "semantic_hash": "ee510feb2e9f9fae7a330450d4c97e39"
   },
-  "frontend/package-lock.json": {
-    "mtime": 1793450118.805367,
-    "seen": 1793476918.353069,
-    "ast_hash": "d9c0c86d89cd4d2bd15a4db471f0a293",
+  ".agents/rules/graphify.md": {
+    "mtime": 1793438158.643446,
+    "seen": 1793481825.9266748,
+    "ast_hash": "f1e53ecc9194573d3c28fc116c743a2e",
+    "semantic_hash": ""
+  },
+  ".agents/workflows/graphify.md": {
+    "mtime": 1793438158.6436203,
+    "seen": 1793481825.926676,
+    "ast_hash": "6d73634a678cf1e1c71930adf80bd1f0",
     "semantic_hash": ""
   }
 }

@@ -1,1 +1,14 @@
-{"0": "Backend Pipelines & Config", "1": "Sketch Preprocessing & Normals", "2": "2.5D Volumetric Mesh Generation", "3": "FastAPI REST Server Endpoints", "4": "Frontend UI Components & Dependencies", "5": "Llama & Gemini Vision Analysis", "6": "Image Refinement & Denoising", "7": "Design Specifications & Colab Architecture", "8": "Colab GPU Server Routes", "9": "Test Suite Fixtures", "10": "Model Managers & VRAM Management", "11": "Zephyr3D Studio UI & Viewport", "12": "Application Configuration Settings", "13": "Test Package Modules", "14": "Canvas Touch Input Controller"}
+{
+  "2": "2.5D Volumetric Mesh Generation",
+  "3": "FastAPI REST Server Endpoints",
+  "4": "Frontend UI Components & Dependencies",
+  "5": "Llama & Gemini Vision Analysis",
+  "6": "Image Refinement & Denoising",
+  "7": "Design Specifications & Colab Architecture",
+  "8": "Colab GPU Server Routes",
+  "9": "Test Suite Fixtures",
+  "11": "Zephyr3D Studio UI & Viewport",
+  "12": "Application Configuration Settings",
+  "13": "Test Package Modules",
+  "14": "Canvas Touch Input Controller"
+}

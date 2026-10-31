@@ -43,17 +43,38 @@ class ForegroundIsolationResult:
     details: Dict[str, Any]
 
 
-def _extract_with_rembg(image_rgb: np.ndarray, model_name: str = "birefnet-general") -> Optional[np.ndarray]:
+_REMBG_SESSIONS: Dict[str, Any] = {}
+
+
+def _get_rembg_session(model_name: str):
+    """Retrieves or creates a cached rembg session to avoid model reloading overhead."""
+    if model_name not in _REMBG_SESSIONS:
+        from rembg import new_session
+
+        logger.info("Initializing rembg session with model '%s'...", model_name)
+        _REMBG_SESSIONS[model_name] = new_session(model_name)
+    return _REMBG_SESSIONS[model_name]
+
+
+def _extract_with_rembg(image_rgb: np.ndarray, model_name: str = "bria-rmbg") -> Optional[np.ndarray]:
     """Attempts to remove background using rembg neural network."""
     try:
-        from rembg import remove, new_session
+        from rembg import remove
 
         pil_img = Image.fromarray(image_rgb)
-        session = new_session(model_name)
-        rgba_pil = remove(pil_img, session=session)
+        try:
+            session = _get_rembg_session(model_name)
+            rgba_pil = remove(pil_img, session=session)
+        except Exception as session_err:
+            logger.warning("rembg session for '%s' failed (%s), trying default rembg session...", model_name, session_err)
+            rgba_pil = remove(pil_img)
+
         rgba_np = np.array(rgba_pil, dtype=np.uint8)
         if rgba_np.ndim == 3 and rgba_np.shape[2] == 4:
-            return rgba_np
+            alpha = rgba_np[:, :, 3]
+            if np.count_nonzero(alpha) > 10:
+                logger.info("Successfully extracted foreground using rembg (%s).", model_name)
+                return rgba_np
     except Exception as err:
         logger.warning("rembg extraction failed or rembg not installed (%s). Falling back to OpenCV.", err)
     return None

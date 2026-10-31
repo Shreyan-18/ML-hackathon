@@ -109,20 +109,26 @@ export default function Viewport3D({
     });
   }, []);
 
-  // Build high-detail parametric preview model based on active sketch archetype
+  // Procedural 3D Model Generator for sketches
   const buildProceduralModel = useCallback((type) => {
     const group = new THREE.Group();
 
     if (type === 'drone') {
       // 1. Center Fuselage
-      const bodyGeo = new THREE.CylinderGeometry(0.6, 0.9, 0.45, 8);
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8, roughness: 0.2 });
+      const bodyGeo = new THREE.CylinderGeometry(0.7, 1.2, 0.4, 8);
+      bodyGeo.scale(1.4, 0.8, 1.8);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x1e242b,
+        metalness: 0.85,
+        roughness: 0.3,
+      });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
-      body.userData.originalColor = 0x1f2937;
+      body.userData.originalColor = 0x1e242b;
       group.add(body);
 
-      // 2. Sensor Cockpit Dome (Coral Glow)
-      const domeGeo = new THREE.SphereGeometry(0.35, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      // 2. Cockpit Sensor Dome
+      const domeGeo = new THREE.SphereGeometry(0.5, 16, 16);
+      domeGeo.scale(1.1, 0.6, 1.4);
       const domeMat = new THREE.MeshStandardMaterial({
         color: 0xff7f50,
         emissive: 0xff7f50,
@@ -131,6 +137,9 @@ export default function Viewport3D({
       });
       const dome = new THREE.Mesh(domeGeo, domeMat);
       dome.position.set(0, 0.25, 0.2);
+      dome.userData.originalColor = 0xff7f50;
+      dome.userData.emissive = 0xff7f50;
+      dome.userData.emissiveIntensity = 0.6;
       group.add(dome);
 
       // 3. Four Quad-Arms with Rotor Pods
@@ -153,6 +162,7 @@ export default function Viewport3D({
 
         const pod = new THREE.Mesh(podGeo, podMat);
         pod.position.set(x, 0.05, z);
+        pod.userData.originalColor = 0x00f59b;
         group.add(pod);
 
         const blade = new THREE.Mesh(bladeGeo, armMat);
@@ -161,9 +171,11 @@ export default function Viewport3D({
         group.add(blade);
       });
     } else if (type === 'chair') {
+      // Modernist Armchair
       const seatGeo = new THREE.BoxGeometry(1.6, 0.2, 1.6);
       const backGeo = new THREE.BoxGeometry(1.6, 1.5, 0.2);
       const cushionMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+      const frameMat = new THREE.MeshStandardMaterial({ color: 0xff7f50, metalness: 0.9, roughness: 0.2 });
 
       const seat = new THREE.Mesh(seatGeo, cushionMat);
       seat.position.y = 0.5;
@@ -173,8 +185,8 @@ export default function Viewport3D({
       back.position.set(0, 1.25, -0.7);
       group.add(back);
 
+      // Legs
       const legGeo = new THREE.CylinderGeometry(0.04, 0.03, 1.0, 8);
-      const legMat = new THREE.MeshStandardMaterial({ color: 0xff7f50, metalness: 0.9, roughness: 0.2 });
       const legPositions = [
         [-0.7, 0, -0.7],
         [0.7, 0, -0.7],
@@ -182,11 +194,62 @@ export default function Viewport3D({
         [0.7, 0, 0.7],
       ];
       legPositions.forEach(([x, y, z]) => {
-        const leg = new THREE.Mesh(legGeo, legMat);
+        const leg = new THREE.Mesh(legGeo, frameMat);
         leg.position.set(x, 0, z);
         group.add(leg);
       });
+    } else if (type === 'mug') {
+      // Coffee Mug
+      const mugBodyGeo = new THREE.CylinderGeometry(0.7, 0.65, 1.4, 24, 1, true);
+      const bottomGeo = new THREE.CircleGeometry(0.65, 24);
+      bottomGeo.rotateX(Math.PI / 2);
+      const handleGeo = new THREE.TorusGeometry(0.45, 0.08, 12, 24, Math.PI * 1.1);
+
+      const ceramicMat = new THREE.MeshStandardMaterial({ color: 0xff7f50, roughness: 0.15, metalness: 0.1 });
+      const body = new THREE.Mesh(mugBodyGeo, ceramicMat);
+      body.position.y = 0.7;
+      group.add(body);
+
+      const bottom = new THREE.Mesh(bottomGeo, ceramicMat);
+      bottom.position.y = 0;
+      group.add(bottom);
+
+      const handle = new THREE.Mesh(handleGeo, ceramicMat);
+      handle.position.set(0.7, 0.7, 0);
+      handle.rotation.z = -Math.PI / 2;
+      group.add(handle);
+    } else if (type === 'car') {
+      // Angular Cyber EV
+      const chassisGeo = new THREE.BoxGeometry(3.0, 0.7, 1.4);
+      const cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 1.2);
+      const carMat = new THREE.MeshStandardMaterial({ color: 0x1e242b, metalness: 0.85, roughness: 0.2 });
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0x00f59b, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.7 });
+
+      const chassis = new THREE.Mesh(chassisGeo, carMat);
+      chassis.position.y = 0.5;
+      group.add(chassis);
+
+      const cabin = new THREE.Mesh(cabinGeo, glassMat);
+      cabin.position.set(0.1, 1.0, 0);
+      group.add(cabin);
+
+      // Wheels
+      const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.25, 16);
+      wheelGeo.rotateZ(Math.PI / 2);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0c0f11, roughness: 0.8 });
+      const wheelPositions = [
+        [-1.0, 0.38, -0.75],
+        [1.0, 0.38, -0.75],
+        [-1.0, 0.38, 0.75],
+        [1.0, 0.38, 0.75],
+      ];
+      wheelPositions.forEach(([x, y, z]) => {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.position.set(x, y, z);
+        group.add(wheel);
+      });
     } else {
+      // Default abstract geometric sculpture
       const icosaGeo = new THREE.IcosahedronGeometry(1.2, 1);
       const mat = new THREE.MeshStandardMaterial({ color: 0x00f59b, metalness: 0.8, roughness: 0.3 });
       const mesh = new THREE.Mesh(icosaGeo, mat);

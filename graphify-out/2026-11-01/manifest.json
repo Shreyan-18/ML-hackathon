@@ -6,10 +6,10 @@
     "semantic_hash": "dd9eca72aea5bfa6c9c382e3fcbcc24a"
   },
   "backend/config.py": {
-    "mtime": 1793476276.1898127,
-    "seen": 1793476887.1843562,
-    "ast_hash": "37a34eea1f05036013f3c4b81da58d8a",
-    "semantic_hash": "37a34eea1f05036013f3c4b81da58d8a"
+    "mtime": 1793478841.2095556,
+    "seen": 1793478947.22144,
+    "ast_hash": "5efb122d3e35d015aa6ed3ac2d60b814",
+    "semantic_hash": ""
   },
   "backend/main.py": {
     "mtime": 1793476280.683297,
@@ -144,16 +144,16 @@
     "semantic_hash": "12cd8f378bb7796a7b9418fda3601e1a"
   },
   "backend/foreground_isolation.py": {
-    "mtime": 1793474716.481016,
-    "seen": 1793476887.184358,
-    "ast_hash": "1d086915a1c77d03b154ea45f8e9c277",
-    "semantic_hash": "1d086915a1c77d03b154ea45f8e9c277"
+    "mtime": 1793478850.3469627,
+    "seen": 1793478947.221441,
+    "ast_hash": "d93dafae959748806c1c8e19a7174a74",
+    "semantic_hash": ""
   },
   "backend/generation_25d.py": {
-    "mtime": 1793474720.2511215,
-    "seen": 1793476887.1843588,
-    "ast_hash": "0cd3a7921eee585f116fa6f190322f4f",
-    "semantic_hash": "0cd3a7921eee585f116fa6f190322f4f"
+    "mtime": 1793477242.1267052,
+    "seen": 1793477277.190022,
+    "ast_hash": "2b94a80d3179a588300794152645bbfc",
+    "semantic_hash": ""
   },
   "tests/test_foreground_isolation.py": {
     "mtime": 1793446633.8523498,
@@ -198,10 +198,10 @@
     "semantic_hash": ""
   },
   "colab_backend.py": {
-    "mtime": 1793475052.731043,
-    "seen": 1793476887.184362,
-    "ast_hash": "7045787ad17c3eb6067c3a61c6ac0fbf",
-    "semantic_hash": "7045787ad17c3eb6067c3a61c6ac0fbf"
+    "mtime": 1793477249.5941226,
+    "seen": 1793477277.190026,
+    "ast_hash": "927ed4caf3096c332d49732efde5dc7b",
+    "semantic_hash": ""
   },
   "colab_gemini_prompt.md": {
     "mtime": 1793466394.0583572,

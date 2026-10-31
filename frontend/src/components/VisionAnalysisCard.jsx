@@ -121,15 +121,15 @@ export default function VisionAnalysisCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
-            <div className="h-24 w-24 bg-white rounded p-1 flex items-center justify-center overflow-hidden shrink-0">
+          <div className="flex flex-col sm:flex-row items-center gap-3.5 bg-[#191c1e] p-2.5 rounded-lg border border-[#272a2d]">
+            <div className="w-full sm:w-28 h-28 bg-white rounded-lg p-1.5 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
               <img
                 src={`${apiBase}/static/refinement/${refinementData.effective_image_path.split(/[/\\]/).pop()}`}
                 alt="Refined effective"
                 className="max-h-full max-w-full object-contain"
               />
             </div>
-            <div className="text-[11px] space-y-1 flex-1">
+            <div className="text-[11px] space-y-1.5 w-full flex-1">
               <div className="flex justify-between border-b border-[#272a2d] pb-1">
                 <span className="text-[#849588]">Edge Contour Retention:</span>
                 <span className="font-semibold text-white">
