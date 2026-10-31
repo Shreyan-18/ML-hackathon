@@ -102,6 +102,36 @@ class LlamaVisionConfig:
 
 
 @dataclass
+class ForegroundIsolationConfig:
+    """Settings for foreground extraction and background removal."""
+
+    method: str = "auto"  # "auto", "rembg", or "contour"
+    rembg_model: str = "birefnet-general"  # or "isnet-general-use", "u2net"
+    clean_mask_holes: bool = True
+    morphology_kernel_size: int = 5
+    min_contour_area_ratio: float = 0.005  # filters specks < 0.5% image area
+    padding_ratio: float = 0.1
+    background_color: Tuple[int, int, int] = (255, 255, 255)
+    debug: bool = False
+
+
+@dataclass
+class Generation25DConfig:
+    """Settings for 2.5D depth estimation, normal map generation, and relief mesh."""
+
+    depth_method: str = "balloon"  # "balloon" (distance transform + shading), "gradient", or "model"
+    depth_scale: float = 1.0
+    invert_depth: bool = False
+    normal_smoothing_sigma: float = 1.0
+    export_relief_mesh: bool = True
+    relief_resolution: int = 128
+    relief_max_height: float = 0.35
+    relief_base_depth: float = 0.05
+    relief_format: str = "obj"  # "obj" or "glb"
+    debug: bool = False
+
+
+@dataclass
 class AppConfig:
     """Application-wide paths and settings."""
 
@@ -109,6 +139,8 @@ class AppConfig:
     upload_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "uploads")
     output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs")
     debug_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "preprocessing")
+    foreground_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "foreground_isolation")
+    generation_25d_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "2.5d_generation")
     reconstruction_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "reconstructions")
     frontend_dist_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "frontend" / "dist")
 
@@ -116,8 +148,12 @@ class AppConfig:
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.debug_dir.mkdir(parents=True, exist_ok=True)
+        self.foreground_output_dir.mkdir(parents=True, exist_ok=True)
+        self.generation_25d_output_dir.mkdir(parents=True, exist_ok=True)
         self.reconstruction_output_dir.mkdir(parents=True, exist_ok=True)
 
 
 app_config = AppConfig()
 vision_config = LlamaVisionConfig()
+foreground_config = ForegroundIsolationConfig()
+generation_25d_config = Generation25DConfig()

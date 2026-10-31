@@ -1,6 +1,6 @@
 # Sketch2Shape AI: Sketch Understanding & 3D Reconstruction
 
-Sketch2Shape AI is an end-to-end hackathon system that converts hand-drawn 2D sketches into 3D models using **Llama 3.2 Vision** for deep semantic understanding and **InstantMesh** for sparse-view 3D mesh reconstruction.
+Sketch2Shape AI is an end-to-end hackathon system that converts hand-drawn 2D sketches into 3D models using **Llama 3.2 Vision** for deep semantic understanding, **2.5D Volumetric Generation** (Depth and Normal mapping), and **InstantMesh** for sparse-view 3D mesh reconstruction.
 
 ---
 
@@ -10,26 +10,30 @@ Sketch2Shape AI is an end-to-end hackathon system that converts hand-drawn 2D sk
 ML-hackathon/
 ├── backend/
 │   ├── __init__.py
-│   ├── config.py              # Configuration dataclasses (PreprocessingConfig, LlamaVisionConfig, AppConfig)
-│   ├── preprocessing.py       # OpenCV/Pillow sketch preprocessing (resizing, padding, CLAHE, bilateral filtering)
-│   ├── vision_analysis.py     # Llama 3.2 Vision semantic analysis with resilient OpenCV heuristic fallback
-│   ├── reconstruction.py      # Reconstruction engine interface (InstantMesh adapter)
-│   └── main.py                # FastAPI backend endpoints (/api/preprocess, /api/analyze-sketch, /api/reconstruct)
+│   ├── config.py                  # Configuration dataclasses (PreprocessingConfig, ForegroundIsolationConfig, Generation25DConfig, AppConfig)
+│   ├── preprocessing.py           # OpenCV/Pillow sketch preprocessing (resizing, padding, CLAHE, bilateral filtering)
+│   ├── foreground_isolation.py    # rembg & OpenCV morphological background removal, mask hole-filling & centering
+│   ├── generation_25d.py          # Monocular Depth estimation, Tangent-space Normal maps, Watertight 3D Relief meshes
+│   ├── vision_analysis.py         # Llama 3.2 Vision semantic analysis with resilient OpenCV heuristic fallback
+│   ├── reconstruction.py          # Reconstruction engine interface (InstantMesh adapter)
+│   └── main.py                    # FastAPI backend endpoints (/api/preprocess, /api/foreground-isolate, /api/generate-25d, /api/reconstruct)
 ├── frontend/
-│   ├── index.html             # Vite entry point
-│   ├── package.json           # React frontend package definition
-│   ├── vite.config.js         # Vite configuration with API proxying
-│   ├── dist/                  # Built standalone React SPA (served directly by FastAPI at http://localhost:8000)
+│   ├── index.html                 # Vite entry point
+│   ├── package.json               # React frontend package definition
+│   ├── vite.config.js             # Vite configuration with API proxying
+│   ├── dist/                      # Built standalone React SPA (served directly by FastAPI at http://localhost:8000)
 │   └── src/
-│       ├── App.jsx            # Interactive drawing canvas, sample sketches, vision cards, and 3D mesh viewer
-│       ├── main.jsx           # React DOM root
-│       └── index.css          # Tailwind / modern styling
+│       ├── App.jsx                # Interactive drawing canvas, sample sketches, vision cards, and 3D mesh viewer
+│       ├── main.jsx               # React DOM root
+│       └── index.css              # Tailwind / modern styling
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py            # Test image fixtures for 10 sketch categories
-│   ├── test_preprocessing.py  # 16 unit and functional tests for OpenCV preprocessing
-│   └── test_vision.py         # 9 tests for Llama 3.2 Vision understanding and API routes
-├── requirements.txt           # Python backend dependencies
+│   ├── conftest.py                # Test image fixtures for 10 sketch categories
+│   ├── test_preprocessing.py      # 16 unit and functional tests for OpenCV preprocessing
+│   ├── test_foreground_isolation.py # 3 tests for background removal, alpha cleaning & re-centering
+│   ├── test_generation_25d.py     # 4 tests for depth estimation, normal map encoding & 3D relief mesh
+│   └── test_vision.py             # 9 tests for Llama 3.2 Vision understanding and API routes
+├── requirements.txt               # Python backend dependencies
 └── README.md
 ```
 
@@ -48,110 +52,59 @@ User Sketch (Interactive Canvas or Upload: PNG/JPEG/WebP)
     - Edge-preserving Bilateral Filter (removes paper grain while keeping thin lines crisp)
                       ↓
 [2] Llama 3.2 Vision Semantic Understanding
-    - Encodes preprocessed image to base64
-    - Analyzes:
-      * Primary object and category
-      * Visible components (strictly distinguishing observed strokes from inferred 3D semantics)
-      * Geometric silhouette, symmetry, proportions, and primitives
-      * Viewing angle / orientation (three-quarter perspective, front, side, etc.)
-      * Uncertainties, occlusions, and missing details
-      * 3D reconstruction prompt
-    - Returns structured JSON validated via Pydantic
-    - Resilient fallback to local OpenCV heuristic analysis when no remote API key is set
+    - Analyzes visible components, geometric silhouette, symmetry, viewing angle
+    - Generates 3D reconstruction prompt
+    - Returns structured JSON validated via Pydantic (with local CV heuristic fallback)
                       ↓
-[3] InstantMesh 3D Reconstruction Pipeline
-    - Receives clean, preprocessed 320x320 RGB image tensor
+[3] Foreground Isolation (rembg + OpenCV)
+    - Isolates sketch foreground from paper background / scanner noise
+    - Morphological closing (cv2.MORPH_CLOSE) seals broken line gaps
+    - Connected component filtering removes noise specks (<0.5% image area)
+    - Crops to bounding box and re-centers on white canvas with 10% safety margin
+                      ↓
+[4] 2.5D Volumetric Generation
+    - Monocular Depth Estimation: Balloon inflation model using Euclidean distance transform + surface shading
+    - Surface Normal Map: Calculates spatial gradients (dx, dy) mapped to tangent-space RGB colors
+    - Watertight 3D Relief Mesh: Displaces heightfield grid and builds base + side skirts (.obj/.glb)
+                      ↓
+[5] InstantMesh 3D Reconstruction Pipeline
     - Generates 6 sparse multi-view projections
-    - Uses vision reconstruction prompt for metadata and optional downstream refinement
+    - Uses vision reconstruction prompt for metadata and downstream refinement
     - Produces downloadable Wavefront OBJ / GLB 3D mesh asset
 ```
 
 ---
 
-## 3. Llama 3.2 Vision Configuration
+## 3. 2.5D Volumetric Generation & Foreground Isolation Details
 
-To use remote Llama 3.2 Vision inference, set one of the following environment variables:
+### 1. Foreground Isolation (`backend/foreground_isolation.py`)
+- **Neural & Morphological Isolation**: Employs `rembg` (BiRefNet) with an edge-preserving OpenCV fallback.
+- **Mask Denoising & Hole-Sealing**: Morphological closing (`cv2.MORPH_CLOSE`) seals broken line strokes; connected component filtering eliminates background dust specks smaller than 0.5% image area.
+- **Aspect-Preserved Centering**: Crops to the tight bounding box and composites onto a pure white canvas with configurable safety padding.
 
-```bash
-# Option A: Groq Cloud (Free / Ultra-fast Llama 3.2 Vision)
-export GROQ_API_KEY="your_groq_api_key_here"
-# or in PowerShell:
-$env:GROQ_API_KEY="your_groq_api_key_here"
-
-# Option B: Together AI
-export TOGETHER_API_KEY="your_together_api_key_here"
-
-# Option C: Local Ollama (Completely offline & private)
-# Start Ollama with llama3.2-vision:
-# ollama run llama3.2-vision
-export LLAMA_VISION_BASE_URL="http://localhost:11434/v1"
-```
-
-> **Zero-Config Resilient Fallback:** If no cloud API key is configured or if the remote endpoint times out, the backend automatically triggers an internal OpenCV Heuristic Computer Vision Engine. It detects stroke density, contours, aspect ratio, primitives (rectangles, ellipses), and orientation to return valid structured JSON without crashing.
+### 2. 2.5D Generation (`backend/generation_25d.py`)
+- **Monocular Depth Estimation**: Balloon inflation model utilizing Euclidean distance transform combined with surface shading gradients to predict relative distance ($Z$).
+- **Tangent-Space Normal Map**: Computes spatial gradients ($\partial Z / \partial x$, $\partial Z / \partial y$) mapped to standard OpenGL tangent-space RGB colors (`#8080FF` neutral background).
+- **Watertight 3D Relief Mesh**: Displaces an elevation grid and constructs base + side walls, exporting verified `.obj` and `.glb` files via Trimesh.
 
 ---
 
-## 4. Structured JSON Schema
-
-The Llama 3.2 Vision analysis returns structured JSON with the following schema:
-
-```json
-{
-  "object_type": "chair",
-  "category": "furniture",
-  "view_type": "three-quarter perspective",
-  "confidence_score": 0.88,
-  "description": "Hand-drawn sketch depicting a minimalist four-legged wooden chair. Observed strokes delineate a horizontal rectangular seat and vertical backrest, while inferred 3D semantics indicate four load-bearing leg posts.",
-  "visible_parts": [
-    {
-      "name": "seat surface",
-      "observed": "horizontal planar boundary stroke",
-      "inferred": "flat horizontal seating platform",
-      "relationships": "connects backrest to support legs"
-    },
-    {
-      "name": "backrest",
-      "observed": "vertical upward boundary strokes above seat level",
-      "inferred": "lumbar support frame",
-      "relationships": "extends upward from rear edge of seat"
-    },
-    {
-      "name": "legs",
-      "observed": "four downward vertical stroke lines",
-      "inferred": "four load-bearing vertical support posts",
-      "relationships": "extend downward from underside of seat to ground"
-    }
-  ],
-  "geometry_features": {
-    "overall_shape": "prismatic silhouette with slender supports",
-    "symmetry": "bilaterally symmetric along vertical axis",
-    "proportions": "width-to-height ratio approximately 0.85:1",
-    "stroke_characteristics": "clean continuous pencil strokes",
-    "observed_geometric_primitives": ["rectangle", "parallel lines"]
-  },
-  "uncertainties": [
-    "Rear leg thickness and joint connections are simplified in 2D line work",
-    "Cushion depth is ambiguous from single contour"
-  ],
-  "reconstruction_prompt": "A minimalist modern chair 3D model, four straight vertical legs, flat seat base, vertical backrest, clean wooden or matte plastic texture, centered on white background, 3D asset ready for reconstruction."
-}
-```
-
----
-
-## 5. API Endpoints
+## 4. API Endpoints
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/health` | Service health status and vision model configuration |
+| `GET` | `/health` | Service health status and module configuration |
 | `POST` | `/api/preprocess` | OpenCV sketch validation, aspect ratio padding, CLAHE, and denoising |
 | `POST` | `/api/analyze-sketch` | Preprocessing + Llama 3.2 Vision structured semantic analysis |
-| `POST` | `/api/reconstruct` | End-to-end pipeline: Preprocess → Vision Analysis → InstantMesh 3D Asset |
+| `POST` | `/api/foreground-isolate` | Isolates sketch foreground, denoises mask, re-centers on white canvas |
+| `POST` | `/api/generate-25d` | Generates Depth Map, Surface Normal Map, and 3D Relief Mesh |
+| `POST` | `/api/pipeline/full` | Full chained pipeline: Preprocess ➔ Vision ➔ Foreground ➔ 2.5D ➔ 3D |
+| `POST` | `/api/reconstruct` | Preprocess → Vision Analysis → InstantMesh 3D Asset |
 | `GET` | `/` | Serves the interactive React single page application |
 
 ---
 
-## 6. How to Run the Application
+## 5. How to Run the Application
 
 ### 1. Backend Server & Frontend UI
 ```bash
@@ -164,6 +117,7 @@ Open `http://localhost:8000` in any browser to access:
 - Quick 1-click sample sketches (Chair, Coffee Mug, Vehicle, Rough Ambiguous)
 - Side-by-side OpenCV preprocessed image comparison
 - Full Llama 3.2 Vision analysis dashboard
+- Foreground isolation and 2.5D Depth & Normal maps
 - InstantMesh 3D asset generation and `.obj` mesh download
 
 ### 2. Optional: Run React Frontend in Vite Dev Server
@@ -175,9 +129,9 @@ npm run dev
 
 ---
 
-## 7. How to Run Tests
+## 6. How to Run Tests
 
-Execute the complete pytest suite (25/25 tests passing):
+Execute the complete pytest suite (32/32 tests passing):
 
 ```bash
 # Run all tests with verbose output:
@@ -185,9 +139,8 @@ Execute the complete pytest suite (25/25 tests passing):
 ```
 
 Test coverage includes:
-- ✅ 10 required OpenCV preprocessing test cases (black-on-white, white-on-black, RGB, grayscale, RGBA transparency, non-square aspect ratio, low contrast, thin 1px lines, noisy sketch, corrupted image)
-- ✅ Llama 3.2 Vision semantic understanding (chair, coffee mug, rough ambiguous sketch)
-- ✅ Distinguishing observed strokes from inferred 3D semantics
-- ✅ Structured JSON schema validation
-- ✅ Remote vision API inference mocking and error fallback
-- ✅ FastAPI `/api/preprocess`, `/api/analyze-sketch`, and `/api/reconstruct` endpoints
+- ✅ 10 required OpenCV preprocessing test cases
+- ✅ Llama 3.2 Vision semantic understanding
+- ✅ Foreground isolation, alpha mask denoising, and canvas centering
+- ✅ 2.5D monocular depth map, surface normal map, and watertight relief mesh generation
+- ✅ FastAPI `/api/preprocess`, `/api/foreground-isolate`, `/api/generate-25d`, `/api/pipeline/full`, and `/api/reconstruct` endpoints
