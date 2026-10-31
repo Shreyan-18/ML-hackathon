@@ -11,10 +11,17 @@ Provides endpoints for:
 from __future__ import annotations
 
 import logging
+import os
 import shutil
+import sys
 import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+# Ensure project root is in sys.path for direct script execution on Windows & Mac
+_project_root = str(Path(__file__).resolve().parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -487,3 +494,9 @@ def api_reconstruct_sketch_to_3d(
 # Mount static frontend SPA at root if built
 if app_config.frontend_dist_dir.exists():
     app.mount("/", StaticFiles(directory=str(app_config.frontend_dist_dir), html=True), name="frontend")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+

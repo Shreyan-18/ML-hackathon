@@ -18,6 +18,9 @@ outputs/*
 !outputs/.gitkeep
 outputs/preprocessing/*
 outputs/reconstructions/*
+outputs/foreground_isolation/*
+outputs/2.5d_generation/*
+outputs/debug/*
 
 # OS / Editor files
 .DS_Store
@@ -28,8 +31,8 @@ Thumbs.db
 # Node / Frontend dependencies
 node_modules/
 frontend/node_modules/
+.npm/
 
 # Graphify local machine paths and cache
 graphify-out/.graphify_*
 graphify-out/cache/
-

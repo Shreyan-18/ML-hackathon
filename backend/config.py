@@ -1,9 +1,14 @@
 """Configuration module for Sketch2Shape AI Preprocessing, Vision, and Backend."""
 
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Tuple
+
+_project_root = str(Path(__file__).resolve().parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 
 @dataclass

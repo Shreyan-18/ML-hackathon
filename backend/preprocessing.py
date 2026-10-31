@@ -9,9 +9,15 @@ CLAHE contrast enhancement, edge-preserving bilateral denoising, and validation.
 from __future__ import annotations
 
 import logging
+import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
+
+_project_root = str(Path(__file__).resolve().parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 import cv2
 import numpy as np
@@ -527,7 +533,13 @@ def preprocess_sketch(
 
     success = cv2.imwrite(str(out_p), save_array)
     if not success:
-        raise ValueError(f"Failed to write processed image to {out_p}")
+        # Cross-platform fallback for Windows paths with unicode or spaces
+        is_success, buf = cv2.imencode(out_p.suffix or ".png", save_array)
+        if is_success:
+            out_p.write_bytes(buf.tobytes())
+            success = True
+        else:
+            raise ValueError(f"Failed to write processed image to {out_p}")
 
     # Stage 8: Validate output image
     validate_processed_image(

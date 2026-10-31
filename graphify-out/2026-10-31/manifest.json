@@ -66,16 +66,16 @@
     "semantic_hash": ""
   },
   "frontend/package.json": {
-    "mtime": 1793442226.5068169,
-    "seen": 1793442439.320508,
-    "ast_hash": "58d9b3c991419a3c967f7cc1d05ed4cf",
-    "semantic_hash": "58d9b3c991419a3c967f7cc1d05ed4cf"
+    "mtime": 1793444549.4465854,
+    "seen": 1793445003.2752042,
+    "ast_hash": "8096be71e696b8fc33448fd87ddcfdd4",
+    "semantic_hash": ""
   },
   "frontend/src/App.jsx": {
-    "mtime": 1793442226.5069795,
-    "seen": 1793442439.320508,
-    "ast_hash": "7561f8f48a9d3b9c07b00c1d5fb43ebf",
-    "semantic_hash": "7561f8f48a9d3b9c07b00c1d5fb43ebf"
+    "mtime": 1793444929.5063622,
+    "seen": 1793445003.2752042,
+    "ast_hash": "3220ffbc252910e0b76f3654c85118f4",
+    "semantic_hash": ""
   },
   "frontend/src/main.jsx": {
     "mtime": 1793442226.5071294,
@@ -96,9 +96,9 @@
     "semantic_hash": "19daee4ae2cab227c883a263d6e612e5"
   },
   "frontend/index.html": {
-    "mtime": 1793444216.7614765,
-    "seen": 1793444237.4599218,
-    "ast_hash": "095f788c23339f0db859db03fe87dc0b",
+    "mtime": 1793444618.3388276,
+    "seen": 1793445003.275213,
+    "ast_hash": "714ddeaa41a3006bafde3b0abe7d4c90",
     "semantic_hash": ""
   },
   "stitch_sketch_to_3d_generator/DESIGN.md": {
@@ -119,10 +119,52 @@
     "ast_hash": "388f9fad1ffc6b4042d73629d160eaf5",
     "semantic_hash": ""
   },
+  "frontend/src/components/BriefingModal.jsx": {
+    "mtime": 1793444893.3495347,
+    "seen": 1793445003.2752051,
+    "ast_hash": "526bfd6ab80e7b8ff0252d3056931f96",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/Header.jsx": {
+    "mtime": 1793444718.5019956,
+    "seen": 1793445003.2752059,
+    "ast_hash": "cd10e613ba9ab278bd05693192850aba",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ShowcaseGallery.jsx": {
+    "mtime": 1793444876.4185627,
+    "seen": 1793445003.2752068,
+    "ast_hash": "94c3aaa4cc8a6e661b85fbdfd9c0f905",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/Sidebar.jsx": {
+    "mtime": 1793444697.5867078,
+    "seen": 1793445003.2752068,
+    "ast_hash": "c414f9560720dbdf3d62637e7d848bc9",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/VectorStudio.jsx": {
+    "mtime": 1793444778.0885437,
+    "seen": 1793445003.275208,
+    "ast_hash": "c205d9e15d18984709ddb12d293a02f0",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/Viewport3D.jsx": {
+    "mtime": 1793444827.6879303,
+    "seen": 1793445003.275208,
+    "ast_hash": "4744f847ab5bfa2d73afd64745d2cf3e",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/VisionAnalysisCard.jsx": {
+    "mtime": 1793444854.020401,
+    "seen": 1793445003.275209,
+    "ast_hash": "b9cac6cdbe07bbfe4e04f3e0f911808a",
+    "semantic_hash": ""
+  },
   "frontend/package-lock.json": {
-    "mtime": 1793444119.1899905,
-    "seen": 1793444237.459925,
-    "ast_hash": "f7912afab05bba24cc31b4a360065dae",
+    "mtime": 1793444549.4602704,
+    "seen": 1793445003.2752159,
+    "ast_hash": "8806cebfd483a9a4e26fe55cd1dd8dca",
     "semantic_hash": ""
   }
 }

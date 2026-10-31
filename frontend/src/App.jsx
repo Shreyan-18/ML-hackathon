@@ -7,7 +7,7 @@ import VisionAnalysisCard from './components/VisionAnalysisCard';
 import ShowcaseGallery from './components/ShowcaseGallery';
 import BriefingModal from './components/BriefingModal';
 
-const API_BASE = window.location.origin.includes('5173') ? 'http://localhost:8000' : '';
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 export default function App() {
   const [activeNav, setActiveNav] = useState('create');
