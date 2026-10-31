@@ -29,6 +29,16 @@ export default function VectorStudio({
   selectedInput = 'original',
   onSelectInput,
   onResetIsolation,
+  // AI Image Refinement Props
+  refineSketch = false,
+  onToggleRefinement,
+  onRefineSketch,
+  refinementLoading = false,
+  refinementError = null,
+  refinementData = null,
+  refinedPreviewUrl = null,
+  refinementUserPrompt = '',
+  setRefinementUserPrompt,
 }) {
   const [activeTab, setActiveTab] = useState('sketch'); // 'sketch' or 'upload'
   const [brushColor, setBrushColor] = useState('#FF7F50');
@@ -37,7 +47,8 @@ export default function VectorStudio({
   const [targetQuality, setTargetQuality] = useState('mid'); // 'low', 'mid', 'ultra'
   const [isDrawing, setIsDrawing] = useState(false);
   const [history, setHistory] = useState([]);
-  const [previewMode, setPreviewMode] = useState('isolated'); // 'isolated', 'original', 'split'
+  const [previewMode, setPreviewMode] = useState('refined'); // 'refined', 'isolated', 'original', 'split'
+  const [showPromptInput, setShowPromptInput] = useState(false);
 
   // Available palette matching design
   const palette = [

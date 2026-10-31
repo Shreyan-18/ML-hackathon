@@ -29,7 +29,16 @@ export default function App() {
   const [isolationData, setIsolationData] = useState(null);
   const [isolatedFile, setIsolatedFile] = useState(null);
   const [isolatedPreviewUrl, setIsolatedPreviewUrl] = useState(null);
-  const [selectedInput, setSelectedInput] = useState('original'); // 'original' or 'isolated'
+  const [selectedInput, setSelectedInput] = useState('original'); // 'original', 'isolated', or 'refined'
+
+  // AI Sketch Refinement States (Zephyr 3D Refinement Pipeline)
+  const [refineSketch, setRefineSketch] = useState(false); // Optional, disabled by default
+  const [refinementLoading, setRefinementLoading] = useState(false);
+  const [refinementError, setRefinementError] = useState(null);
+  const [refinementData, setRefinementData] = useState(null);
+  const [refinedFile, setRefinedFile] = useState(null);
+  const [refinedPreviewUrl, setRefinedPreviewUrl] = useState(null);
+  const [refinementUserPrompt, setRefinementUserPrompt] = useState('');
 
   // 2.5D Volumetric Generation States
   const [generation25DData, setGeneration25DData] = useState(null);
@@ -69,8 +78,11 @@ export default function App() {
     });
   };
 
-  // Helper to resolve the active image (isolated or original)
+  // Helper to resolve the active image (refined, isolated, or original)
   const getActiveFile = async () => {
+    if (refineSketch && selectedInput === 'refined' && refinedFile) {
+      return refinedFile;
+    }
     if (isolateForeground && selectedInput === 'isolated' && isolatedFile) {
       return isolatedFile;
     }
@@ -80,18 +92,111 @@ export default function App() {
     return await getCanvasFile();
   };
 
-  // Reset isolation cache when sketch changes
+  // Reset isolation and refinement caches when sketch changes
   const handleResetIsolation = (triggerReisolate = false) => {
     setIsolationData(null);
     setIsolatedFile(null);
     setIsolatedPreviewUrl(null);
+    setRefinementData(null);
+    setRefinedFile(null);
+    setRefinedPreviewUrl(null);
     setSelectedInput('original');
     setIsolationError(null);
+    setRefinementError(null);
 
     if (isolateForeground && triggerReisolate) {
       setTimeout(() => {
         handleIsolateForeground();
       }, 50);
+    }
+    if (refineSketch && triggerReisolate) {
+      setTimeout(() => {
+        handleRefineSketch();
+      }, 80);
+    }
+  };
+
+  // AI Sketch Refinement Trigger
+  const handleRefineSketch = async (promptOverride = null) => {
+    setRefinementError(null);
+    setRefinementLoading(true);
+
+    try {
+      let fileToUpload = selectedFile;
+      if (!fileToUpload) {
+        fileToUpload = await getCanvasFile();
+      }
+
+      if (!fileToUpload) {
+        throw new Error('Please draw or upload a sketch first before refining.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+
+      const promptParam = promptOverride !== null ? promptOverride : refinementUserPrompt;
+      const url = `${API_BASE}/api/refine-sketch?target_size=${targetSize}${
+        promptParam ? `&user_prompt=${encodeURIComponent(promptParam)}` : ''
+      }&strict_validation=true`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      setRefinementData(data);
+
+      const effectiveFilename = data.effective_image_path.split(/[/\\]/).pop();
+      const effectiveUrl = `${API_BASE}/static/refinement/${effectiveFilename}`;
+      setRefinedPreviewUrl(effectiveUrl);
+
+      // Cache effective image blob for downstream pipelines
+      try {
+        const blobRes = await fetch(effectiveUrl);
+        if (blobRes.ok) {
+          const blob = await blobRes.blob();
+          const file = new File([blob], `refined_${effectiveFilename}`, { type: 'image/png' });
+          setRefinedFile(file);
+        }
+      } catch (cacheErr) {
+        console.warn('Could not cache refined blob locally:', cacheErr);
+      }
+
+      if (!data.is_fallback) {
+        setSelectedInput('refined');
+        setSuccessToast(`Sketch refined! Structure validated (Edge IoU: ${(data.validation.edge_overlap_iou * 100).toFixed(0)}%)`);
+      } else {
+        setSelectedInput('original');
+        setSuccessToast(`Refinement rejected by validation; fell back to preprocessed sketch.`);
+      }
+      setTimeout(() => setSuccessToast(null), 3500);
+    } catch (err) {
+      console.error(err);
+      setRefinementError(err.message || 'Sketch refinement failed.');
+    } finally {
+      setRefinementLoading(false);
+    }
+  };
+
+  // Toggle Refinement Switch
+  const handleToggleRefinement = (enabled) => {
+    setRefineSketch(enabled);
+    if (enabled) {
+      if (refinementData && !refinementData.is_fallback) {
+        setSelectedInput('refined');
+      } else {
+        handleRefineSketch();
+      }
+    } else {
+      if (selectedInput === 'refined') {
+        setSelectedInput(isolateForeground && isolationData ? 'isolated' : 'original');
+      }
     }
   };
 
@@ -398,6 +503,16 @@ export default function App() {
             selectedInput={selectedInput}
             onSelectInput={setSelectedInput}
             onResetIsolation={handleResetIsolation}
+            // AI Image Refinement Props
+            refineSketch={refineSketch}
+            onToggleRefinement={handleToggleRefinement}
+            onRefineSketch={handleRefineSketch}
+            refinementLoading={refinementLoading}
+            refinementError={refinementError}
+            refinementData={refinementData}
+            refinedPreviewUrl={refinedPreviewUrl}
+            refinementUserPrompt={refinementUserPrompt}
+            setRefinementUserPrompt={setRefinementUserPrompt}
           />
 
           {/* Dual Panel Grid: 3D Viewport (8 cols) & Llama 3.2 Vision Analysis (4 cols) */}
@@ -423,6 +538,8 @@ export default function App() {
                 isolationData={isolationData}
                 isolatedPreviewUrl={isolatedPreviewUrl}
                 generation25DData={generation25DData}
+                refinementData={refinementData}
+                refinedPreviewUrl={refinedPreviewUrl}
                 apiBase={API_BASE}
               />
             </div>
