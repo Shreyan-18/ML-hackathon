@@ -32,15 +32,18 @@ from backend.config import (
     ForegroundIsolationConfig,
     Generation25DConfig,
     PreprocessingConfig,
+    RefinementConfig,
     app_config,
     foreground_config,
     generation_25d_config,
+    refinement_config,
     vision_config,
 )
 from backend.foreground_isolation import isolate_foreground
 from backend.generation_25d import generate_25d
 from backend.preprocessing import preprocess_sketch, validate_processed_image
 from backend.reconstruction import reconstruct_3d
+from backend.refinement import refine_sketch_pipeline
 from backend.vision_analysis import (
     SketchAnalysisResult,
     analyze_sketch_with_llama_vision,
@@ -53,7 +56,7 @@ logger = logging.getLogger("sketch2shape.api")
 app = FastAPI(
     title="Sketch2Shape AI API",
     description="Backend API for converting hand-drawn 2D sketches into 3D models with 2.5D Volumetric generation and InstantMesh.",
-    version="1.2.0",
+    version="1.3.0",
 )
 
 # CORS setup for web frontend
@@ -70,6 +73,7 @@ app.mount("/static/uploads", StaticFiles(directory=str(app_config.upload_dir)), 
 app.mount("/static/outputs", StaticFiles(directory=str(app_config.output_dir)), name="outputs")
 app.mount("/static/foreground", StaticFiles(directory=str(app_config.foreground_output_dir)), name="foreground")
 app.mount("/static/generation25d", StaticFiles(directory=str(app_config.generation_25d_output_dir)), name="generation25d")
+app.mount("/static/refinement", StaticFiles(directory=str(app_config.refinement_output_dir)), name="refinement")
 
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 
@@ -148,6 +152,22 @@ class ReconstructionResponse(BaseModel):
     details: Dict[str, Any]
 
 
+class RefinementResponse(BaseModel):
+    success: bool
+    message: str
+    original_image_path: str
+    preprocessed_image_path: str
+    refined_image_path: str
+    effective_image_path: str
+    is_fallback: bool
+    prompt_used: str
+    negative_prompt: str
+    engine_used: str
+    validation: Dict[str, Any]
+    analysis: Optional[SketchAnalysisResult] = None
+    details: Dict[str, Any]
+
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -158,12 +178,13 @@ def health_check() -> Dict[str, Any]:
     return {
         "status": "ok",
         "service": "Sketch2Shape AI",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "modules": [
             "OpenCV Preprocessing",
             "Llama 3.2 Vision Understanding",
             "Foreground Isolation (rembg/OpenCV)",
             "2.5D Volumetric Generation (Depth/Normal/Relief)",
+            "AI Image Refinement & Quality Validation",
             "3D Mesh Reconstruction (InstantMesh)",
         ],
         "vision_model": vision_config.model,
@@ -336,6 +357,72 @@ def api_generate_25d(
         depth_stats=gen_res.depth_stats,
         mesh_stats=gen_res.mesh_stats,
         details=gen_res.details,
+    )
+
+
+@app.post("/api/refine-sketch", response_model=RefinementResponse)
+def api_refine_sketch(
+    file: UploadFile = File(..., description="Uploaded sketch image"),
+    target_size: int = Query(320, description="Target canvas size"),
+    user_prompt: Optional[str] = Query(None, description="Optional user prompt or refinement instructions"),
+    strict_validation: bool = Query(True, description="Enforce strict structural similarity thresholds"),
+):
+    """Refines rough user sketches into clean, visually coherent images with prompt conditioning and quality validation."""
+    prep_res = api_preprocess_sketch(file=file, target_size=target_size)
+    processed_path = prep_res.processed_image_path
+
+    config = RefinementConfig(
+        strict_validation=strict_validation,
+    )
+
+    try:
+        refine_res = refine_sketch_pipeline(
+            input_image_path=processed_path,
+            user_prompt=user_prompt,
+            target_size=(target_size, target_size),
+            config=config,
+            perform_vision_analysis=True,
+        )
+    except Exception as err:
+        logger.exception("Sketch refinement failed: %s", err)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Sketch refinement error: {err}",
+        )
+
+    val_dict = {
+        "passed": refine_res.validation.passed,
+        "is_fallback": refine_res.validation.is_fallback,
+        "edge_overlap_iou": refine_res.validation.edge_overlap_iou,
+        "silhouette_iou": refine_res.validation.silhouette_iou,
+        "centroid_drift": refine_res.validation.centroid_drift,
+        "background_cleanliness_score": refine_res.validation.background_cleanliness_score,
+        "contrast_ratio": refine_res.validation.contrast_ratio,
+        "component_count_ratio": refine_res.validation.component_count_ratio,
+        "failure_reasons": refine_res.validation.failure_reasons,
+        "metrics": refine_res.validation.metrics,
+    }
+
+    status_msg = (
+        "Sketch refined and validated successfully."
+        if not refine_res.is_fallback
+        else f"Refinement rejected by structural quality validation; fell back to preprocessed sketch: {', '.join(refine_res.validation.failure_reasons)}"
+    )
+
+    return RefinementResponse(
+        success=True,
+        message=status_msg,
+        original_image_path=prep_res.original_image_path,
+        preprocessed_image_path=refine_res.preprocessed_image_path,
+        refined_image_path=refine_res.refined_image_path,
+        effective_image_path=refine_res.effective_image_path,
+        is_fallback=refine_res.is_fallback,
+        prompt_used=refine_res.prompt_used,
+        negative_prompt=refine_res.negative_prompt,
+        engine_used=refine_res.engine_used,
+        validation=val_dict,
+        analysis=refine_res.analysis,
+        details=refine_res.details,
     )
 
 

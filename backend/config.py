@@ -137,6 +137,31 @@ class Generation25DConfig:
 
 
 @dataclass
+class RefinementConfig:
+    """Settings for AI sketch image refinement, prompt conditioning, and quality validation."""
+
+    engine: str = "auto"  # "auto", "diffusers", "api", "neural_heuristic"
+    model_id: str = "lllyasviel/control_v11p_sd15_scribble"
+    denoising_strength: float = 0.35  # Conservative to preserve sketch structure
+    guidance_scale: float = 7.5
+    num_inference_steps: int = 20
+    preserve_strokes: bool = True
+    contrast_enhancement_clip: float = 2.0
+    line_smoothing_sigma: float = 1.0
+
+    # Quality Validation Thresholds (Rejection & Fallback Guardrails)
+    strict_validation: bool = True
+    min_edge_overlap_iou: float = 0.40  # Minimum edge contour retention
+    min_silhouette_iou: float = 0.65    # Minimum bounding box/silhouette retention
+    max_centroid_drift: float = 0.12     # Maximum 12% centroid shift allowed
+    min_background_cleanliness: float = 0.85 # Minimum 85% background purity
+    min_contrast_ratio: float = 0.35    # Stroke-to-background contrast ratio
+    max_component_ratio: float = 2.5    # Prevents hallucinating > 2.5x extra disjoint parts
+
+    debug: bool = False
+
+
+@dataclass
 class AppConfig:
     """Application-wide paths and settings."""
 
@@ -146,6 +171,7 @@ class AppConfig:
     debug_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "preprocessing")
     foreground_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "foreground_isolation")
     generation_25d_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "2.5d_generation")
+    refinement_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "refinement")
     reconstruction_output_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "outputs" / "reconstructions")
     frontend_dist_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "frontend" / "dist")
 
@@ -155,6 +181,7 @@ class AppConfig:
         self.debug_dir.mkdir(parents=True, exist_ok=True)
         self.foreground_output_dir.mkdir(parents=True, exist_ok=True)
         self.generation_25d_output_dir.mkdir(parents=True, exist_ok=True)
+        self.refinement_output_dir.mkdir(parents=True, exist_ok=True)
         self.reconstruction_output_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -162,3 +189,4 @@ app_config = AppConfig()
 vision_config = LlamaVisionConfig()
 foreground_config = ForegroundIsolationConfig()
 generation_25d_config = Generation25DConfig()
+refinement_config = RefinementConfig()

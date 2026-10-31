@@ -7,6 +7,8 @@ export default function VisionAnalysisCard({
   isolationData,
   isolatedPreviewUrl,
   generation25DData,
+  refinementData,
+  refinedPreviewUrl,
   apiBase = '',
 }) {
   const [copied, setCopied] = useState(false);
@@ -85,6 +87,74 @@ export default function VisionAnalysisCard({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* AI Sketch Refinement & Quality Validation Card */}
+      {refinementData && (
+        <div className="p-3.5 rounded-xl bg-[#0c0f11]/80 border border-[#FF7F50]/40 shadow-inner">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-[#FF7F50] uppercase tracking-wider flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">auto_fix_high</span>
+              <span>AI Refined Sketch (InstantMesh Ready)</span>
+            </span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                refinementData.is_fallback
+                  ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
+                  : 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
+              }`}
+            >
+              {refinementData.is_fallback ? 'Fallback Activated' : 'Quality Validated'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
+            <div className="h-24 w-24 bg-white rounded p-1 flex items-center justify-center overflow-hidden shrink-0">
+              <img
+                src={`${apiBase}/static/refinement/${refinementData.effective_image_path.split(/[/\\]/).pop()}`}
+                alt="Refined effective"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            <div className="text-[11px] space-y-1 flex-1">
+              <div className="flex justify-between border-b border-[#272a2d] pb-1">
+                <span className="text-[#849588]">Edge Contour Retention:</span>
+                <span className="font-semibold text-white">
+                  {(refinementData.validation.edge_overlap_iou * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[#272a2d] pb-1">
+                <span className="text-[#849588]">Silhouette IoU:</span>
+                <span className="font-semibold text-white">
+                  {(refinementData.validation.silhouette_iou * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[#272a2d] pb-1">
+                <span className="text-[#849588]">Background Cleanliness:</span>
+                <span className="font-semibold text-[#00f59b]">
+                  {(refinementData.validation.background_cleanliness_score * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#849588]">Centroid Drift:</span>
+                <span className="font-semibold text-white">
+                  {(refinementData.validation.centroid_drift * 100).toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {refinementData.is_fallback && refinementData.validation.failure_reasons?.length > 0 && (
+            <div className="mt-2 p-2 rounded bg-[#93000a]/20 border border-[#ffb4ab]/30 text-[10px] text-[#ffb4ab]">
+              <span className="font-semibold block mb-0.5">Validation Guardrail Rejection:</span>
+              <ul className="list-disc list-inside space-y-0.5">
+                {refinementData.validation.failure_reasons.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

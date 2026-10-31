@@ -435,6 +435,53 @@ export default function VectorStudio({
             )}
           </div>
 
+          {/* AI Image Refinement Toggle Switch */}
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#0c0f11] border border-[#323537]/80 hover:border-[#FF7F50]/50 transition-all shadow-inner">
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                id="refine-sketch-checkbox"
+                checked={refineSketch}
+                onChange={(e) => onToggleRefinement && onToggleRefinement(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-8 h-4 bg-[#272a2d] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#FF7F50]"></div>
+              <span className="ml-2 text-xs font-semibold text-white flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm text-[#FF7F50]">auto_fix_high</span>
+                <span>AI Refine</span>
+              </span>
+            </label>
+            <span
+              className="text-[10px] text-[#849588] hidden 2xl:inline border-l border-[#323537]/60 pl-2"
+              title="Enhance line continuity, contrast and structure with quality validation"
+            >
+              Clean contours & enhance contrast
+            </span>
+            {refinementLoading && (
+              <span className="material-symbols-outlined text-xs text-[#FF7F50] animate-spin" title="Synthesizing refined image...">
+                sync
+              </span>
+            )}
+            {refineSketch && refinementData && (
+              <span className={`px-2 py-0.2 rounded-full text-[10px] font-semibold border ${
+                refinementData.is_fallback
+                  ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
+                  : 'bg-[#FF7F50]/20 text-[#FF7F50] border-[#FF7F50]/40'
+              }`}>
+                {refinementData.is_fallback ? 'Fallback' : 'Validated'}
+              </span>
+            )}
+            <button
+              onClick={() => setShowPromptInput(!showPromptInput)}
+              className={`p-1 rounded text-xs transition-colors ${
+                showPromptInput ? 'text-[#FF7F50] bg-[#FF7F50]/15' : 'text-[#849588] hover:text-white'
+              }`}
+              title="Configure custom refinement guidance prompt"
+            >
+              <span className="material-symbols-outlined text-xs">tune</span>
+            </button>
+          </div>
+
           <div className="h-5 w-px bg-[#323537]/50 hidden md:block"></div>
 
           {/* Realtime badges */}
@@ -600,6 +647,49 @@ export default function VectorStudio({
         </div>
       )}
 
+      {/* Collapsible Refinement Guidance Drawer */}
+      {showPromptInput && (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-[#111416] border-b border-[#323537]/40 text-xs">
+          <span className="material-symbols-outlined text-sm text-[#FF7F50]">tune</span>
+          <span className="text-[#849588] text-[11px] whitespace-nowrap">Refinement Guidance:</span>
+          <input
+            type="text"
+            value={refinementUserPrompt}
+            onChange={(e) => setRefinementUserPrompt && setRefinementUserPrompt(e.target.value)}
+            placeholder="e.g. sharp chamfered lines, sci-fi metallic chassis, clean minimalist contours..."
+            className="flex-1 bg-[#191c1e] border border-[#323537] rounded-lg px-3 py-1.5 text-white placeholder-[#849588] focus:outline-none focus:border-[#FF7F50]"
+          />
+          <button
+            onClick={() => onRefineSketch && onRefineSketch()}
+            disabled={refinementLoading}
+            className="px-3 py-1.5 rounded-lg bg-[#FF7F50] hover:bg-[#e06336] text-white font-semibold flex items-center gap-1 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+          >
+            {refinementLoading ? (
+              <span className="material-symbols-outlined text-xs animate-spin">refresh</span>
+            ) : (
+              <span className="material-symbols-outlined text-xs">auto_fix_high</span>
+            )}
+            <span>Apply Refinement</span>
+          </button>
+        </div>
+      )}
+
+      {/* Refinement Error Alert Banner */}
+      {refinementError && refineSketch && (
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-[#93000a]/20 border border-[#ffb4ab]/30 text-[#ffb4ab] text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">warning</span>
+            <span>Refinement Notice: {refinementError}</span>
+          </div>
+          <button
+            onClick={() => onRefineSketch && onRefineSketch()}
+            className="px-2.5 py-1 rounded bg-[#ffb4ab]/20 hover:bg-[#ffb4ab]/30 text-white font-medium transition-colors"
+          >
+            Retry Refine
+          </button>
+        </div>
+      )}
+
       {/* Isolation Error Alert Banner */}
       {isolationError && isolateForeground && (
         <div className="mx-4 mt-3 p-3 rounded-xl bg-[#93000a]/20 border border-[#ffb4ab]/30 text-[#ffb4ab] text-xs flex items-center justify-between">
@@ -634,9 +724,35 @@ export default function VectorStudio({
             onTouchMove={draw}
             onTouchEnd={stopDrawing}
             className={`w-full h-full cursor-crosshair block relative z-10 touch-none ${
-              isolateForeground && isolatedPreviewUrl && previewMode === 'isolated' ? 'invisible pointer-events-none' : ''
+              (isolateForeground && isolatedPreviewUrl && previewMode === 'isolated') ||
+              (refineSketch && refinedPreviewUrl && previewMode === 'refined')
+                ? 'invisible pointer-events-none'
+                : ''
             }`}
           />
+
+          {/* AI Refined Image Preview Overlay */}
+          {refineSketch && refinedPreviewUrl && previewMode === 'refined' && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#080a0c]/90 backdrop-blur-sm p-4">
+              <div className="relative max-w-md max-h-[360px] w-full h-full rounded-2xl bg-white border border-[#FF7F50]/50 overflow-hidden flex items-center justify-center shadow-2xl">
+                <img
+                  src={refinedPreviewUrl}
+                  alt="AI Refined Sketch"
+                  className="max-h-[310px] max-w-[310px] object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.15)]"
+                />
+                <div className="absolute bottom-3 left-3 bg-[#0c0f11]/90 backdrop-blur-md px-3 py-1 rounded-md text-[11px] text-[#FF7F50] border border-[#FF7F50]/30 font-mono flex items-center gap-1.5 shadow-lg">
+                  <span className="material-symbols-outlined text-xs">auto_fix_high</span>
+                  <span>AI Refined • {refinementData?.is_fallback ? 'Fallback Used (Structure Protected)' : 'Structure Validated'}</span>
+                </div>
+                {refinementData && (
+                  <div className="absolute top-3 right-3 bg-[#0c0f11]/90 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] text-white border border-[#323537] font-mono flex items-center gap-2 shadow-lg">
+                    <span className="text-[#00f59b]">Edge IoU: {(refinementData.validation.edge_overlap_iou * 100).toFixed(0)}%</span>
+                    <span className="text-[#7bd0ff]">Cleanliness: {(refinementData.validation.background_cleanliness_score * 100).toFixed(0)}%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Foreground Isolation Preview Overlay (Alpha Transparency Preserved) */}
           {isolateForeground && isolatedPreviewUrl && previewMode === 'isolated' && (
@@ -664,7 +780,7 @@ export default function VectorStudio({
           )}
 
           {/* Split Mode Comparison Overlay */}
-          {isolateForeground && isolatedPreviewUrl && previewMode === 'split' && (
+          {(previewMode === 'split' && (refinedPreviewUrl || isolatedPreviewUrl)) && (
             <div className="absolute inset-0 z-20 grid grid-cols-2 gap-4 p-6 bg-[#080a0c]/90 backdrop-blur-sm items-center justify-center">
               {/* Left: Original Sketch */}
               <div className="flex flex-col items-center justify-center h-full p-3 rounded-xl bg-[#0c0f11] border border-[#323537]">
@@ -677,48 +793,73 @@ export default function VectorStudio({
                 </div>
               </div>
 
-              {/* Right: Isolated Cutout with Checkerboard */}
-              <div className="flex flex-col items-center justify-center h-full p-3 rounded-xl bg-[#0c0f11] border border-[#00f59b]/40">
-                <span className="text-[11px] font-semibold text-[#00f59b] mb-2 uppercase tracking-wider flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">content_cut</span>
-                  <span>Isolated Object (Alpha)</span>
+              {/* Right: Refined AI or Isolated Cutout */}
+              <div className="flex flex-col items-center justify-center h-full p-3 rounded-xl bg-[#0c0f11] border border-[#FF7F50]/40">
+                <span className="text-[11px] font-semibold text-[#FF7F50] mb-2 uppercase tracking-wider flex items-center gap-1">
+                  <span className="material-symbols-outlined text-xs">auto_fix_high</span>
+                  <span>{refinedPreviewUrl ? 'Refined AI Image' : 'Isolated Object (Alpha)'}</span>
                 </span>
                 <div
-                  className="w-full h-64 flex items-center justify-center rounded-lg overflow-hidden"
-                  style={{
-                    backgroundImage: 'repeating-conic-gradient(#1f262b 0% 25%, #0e1216 0% 50%)',
-                    backgroundSize: '20px 20px',
-                  }}
+                  className="w-full h-64 flex items-center justify-center rounded-lg overflow-hidden bg-white"
+                  style={
+                    !refinedPreviewUrl
+                      ? {
+                          backgroundImage: 'repeating-conic-gradient(#1f262b 0% 25%, #0e1216 0% 50%)',
+                          backgroundSize: '20px 20px',
+                        }
+                      : {}
+                  }
                 >
-                  <img src={isolatedPreviewUrl} alt="Isolated" className="max-h-full max-w-full object-contain" />
+                  <img
+                    src={refinedPreviewUrl || isolatedPreviewUrl}
+                    alt="Processed output"
+                    className="max-h-full max-w-full object-contain"
+                  />
                 </div>
               </div>
             </div>
           )}
 
-          {/* Isolated Output Comparison & Selection Toolbar */}
-          {isolateForeground && isolatedPreviewUrl && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-1.5 rounded-2xl bg-[#0c0f11]/95 backdrop-blur-xl border border-[#00f59b]/40 shadow-[0_4px_24px_rgba(0,0,0,0.6)] text-xs flex-wrap justify-center">
+          {/* Output Comparison & Selection Toolbar */}
+          {((isolateForeground && isolatedPreviewUrl) || (refineSketch && refinedPreviewUrl)) && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-1.5 rounded-2xl bg-[#0c0f11]/95 backdrop-blur-xl border border-[#323537]/80 shadow-[0_4px_24px_rgba(0,0,0,0.6)] text-xs flex-wrap justify-center">
               {/* Preview Mode Selector */}
               <div className="flex items-center gap-1 bg-[#191c1e] p-1 rounded-xl border border-[#272a2d]">
-                <button
-                  onClick={() => setPreviewMode('isolated')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    previewMode === 'isolated'
-                      ? 'bg-[#00f59b] text-[#003920] shadow-[0_0_12px_rgba(0,245,155,0.4)]'
-                      : 'text-[#bfc9c3] hover:text-white'
-                  }`}
-                  title="View transparent isolated subject"
-                >
-                  <span className="material-symbols-outlined text-sm">filter_vintage</span>
-                  <span>Isolated (Alpha)</span>
-                </button>
+                {refinedPreviewUrl && (
+                  <button
+                    onClick={() => setPreviewMode('refined')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      previewMode === 'refined'
+                        ? 'bg-[#FF7F50] text-white shadow-[0_0_12px_rgba(255,127,80,0.4)]'
+                        : 'text-[#bfc9c3] hover:text-white'
+                    }`}
+                    title="View AI Refined image"
+                  >
+                    <span className="material-symbols-outlined text-sm">auto_fix_high</span>
+                    <span>Refined AI</span>
+                  </button>
+                )}
+
+                {isolatedPreviewUrl && (
+                  <button
+                    onClick={() => setPreviewMode('isolated')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      previewMode === 'isolated'
+                        ? 'bg-[#00f59b] text-[#003920] shadow-[0_0_12px_rgba(0,245,155,0.4)]'
+                        : 'text-[#bfc9c3] hover:text-white'
+                    }`}
+                    title="View transparent isolated subject"
+                  >
+                    <span className="material-symbols-outlined text-sm">filter_vintage</span>
+                    <span>Isolated (Alpha)</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => setPreviewMode('original')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                     previewMode === 'original'
-                      ? 'bg-[#FF7F50] text-white shadow-[0_0_12px_rgba(255,127,80,0.4)]'
+                      ? 'bg-[#37393c] text-white'
                       : 'text-[#bfc9c3] hover:text-white'
                   }`}
                   title="View original drawing canvas"
@@ -734,7 +875,7 @@ export default function VectorStudio({
                       ? 'bg-[#7bd0ff] text-[#002b40] shadow-[0_0_12px_rgba(123,208,255,0.4)]'
                       : 'text-[#bfc9c3] hover:text-white'
                   }`}
-                  title="Compare original and isolated side-by-side"
+                  title="Compare original and processed side-by-side"
                 >
                   <span className="material-symbols-outlined text-sm">vertical_split</span>
                   <span>Compare</span>
@@ -743,47 +884,81 @@ export default function VectorStudio({
 
               <div className="h-5 w-px bg-[#323537] hidden sm:block"></div>
 
-              {/* Input Selection Action: Use Isolated vs Revert to Original */}
-              {selectedInput === 'isolated' ? (
+              {/* Input Selection Action: Use Selected vs Revert to Original */}
+              {selectedInput === 'refined' ? (
                 <div className="flex items-center gap-1.5">
-                  <span className="px-2.5 py-1 rounded-lg bg-[#00f59b]/20 text-[#00f59b] text-[11px] font-semibold border border-[#00f59b]/40 flex items-center gap-1">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#FF7F50]/20 text-[#FF7F50] text-[11px] font-semibold border border-[#FF7F50]/40 flex items-center gap-1">
                     <span className="material-symbols-outlined text-xs">check_circle</span>
-                    <span>Using Isolated for 2.5D/3D</span>
+                    <span>Using Refined for 3D</span>
                   </span>
                   <button
                     onClick={() => onSelectInput && onSelectInput('original')}
                     className="px-2.5 py-1 rounded-lg bg-[#1d2022] hover:bg-[#272a2d] text-[#bfc9c3] hover:text-white text-[11px] font-medium border border-[#323537]/60 transition-colors"
-                    title="Revert back to the original sketch for 2.5D and 3D generation"
+                  >
+                    Revert to Original
+                  </button>
+                </div>
+              ) : selectedInput === 'isolated' ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#00f59b]/20 text-[#00f59b] text-[11px] font-semibold border border-[#00f59b]/40 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">check_circle</span>
+                    <span>Using Isolated for 3D</span>
+                  </span>
+                  <button
+                    onClick={() => onSelectInput && onSelectInput('original')}
+                    className="px-2.5 py-1 rounded-lg bg-[#1d2022] hover:bg-[#272a2d] text-[#bfc9c3] hover:text-white text-[11px] font-medium border border-[#323537]/60 transition-colors"
                   >
                     Revert to Original
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <span className="px-2.5 py-1 rounded-lg bg-[#FF7F50]/20 text-[#FF7F50] text-[11px] font-semibold border border-[#FF7F50]/40 flex items-center gap-1">
+                  <span className="px-2.5 py-1 rounded-lg bg-[#1d2022] text-[#bfc9c3] text-[11px] font-semibold border border-[#323537]/60 flex items-center gap-1">
                     <span>Using Original Sketch</span>
                   </span>
-                  <button
-                    onClick={() => onSelectInput && onSelectInput('isolated')}
-                    className="px-2.5 py-1 rounded-lg bg-[#00f59b]/25 hover:bg-[#00f59b]/35 text-[#00f59b] text-[11px] font-semibold border border-[#00f59b]/50 transition-colors shadow-sm"
-                    title="Use isolated foreground cutout for 2.5D and 3D generation"
-                  >
-                    Continue with Isolated
-                  </button>
+                  {refinedPreviewUrl && (
+                    <button
+                      onClick={() => onSelectInput && onSelectInput('refined')}
+                      className="px-2.5 py-1 rounded-lg bg-[#FF7F50]/25 hover:bg-[#FF7F50]/35 text-[#FF7F50] text-[11px] font-semibold border border-[#FF7F50]/50 transition-colors"
+                    >
+                      Use Refined Output
+                    </button>
+                  )}
+                  {isolatedPreviewUrl && (
+                    <button
+                      onClick={() => onSelectInput && onSelectInput('isolated')}
+                      className="px-2.5 py-1 rounded-lg bg-[#00f59b]/25 hover:bg-[#00f59b]/35 text-[#00f59b] text-[11px] font-semibold border border-[#00f59b]/50 transition-colors"
+                    >
+                      Use Isolated
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* Re-isolate Button */}
-              <button
-                onClick={() => onIsolateForeground && onIsolateForeground()}
-                disabled={isolationLoading}
-                className="p-1 rounded-lg hover:bg-[#272a2d] text-[#849588] hover:text-[#00f59b] transition-colors"
-                title="Re-run Foreground Isolation on current sketch"
-              >
-                <span className={`material-symbols-outlined text-sm ${isolationLoading ? 'animate-spin' : ''}`}>
-                  refresh
-                </span>
-              </button>
+              {/* Action Trigger Button */}
+              {refineSketch ? (
+                <button
+                  onClick={() => onRefineSketch && onRefineSketch()}
+                  disabled={refinementLoading}
+                  className="p-1 rounded-lg hover:bg-[#272a2d] text-[#849588] hover:text-[#FF7F50] transition-colors"
+                  title="Re-run AI Image Refinement"
+                >
+                  <span className={`material-symbols-outlined text-sm ${refinementLoading ? 'animate-spin' : ''}`}>
+                    refresh
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => onIsolateForeground && onIsolateForeground()}
+                  disabled={isolationLoading}
+                  className="p-1 rounded-lg hover:bg-[#272a2d] text-[#849588] hover:text-[#00f59b] transition-colors"
+                  title="Re-run Foreground Isolation"
+                >
+                  <span className={`material-symbols-outlined text-sm ${isolationLoading ? 'animate-spin' : ''}`}>
+                    refresh
+                  </span>
+                </button>
+              )}
             </div>
           )}
 
@@ -933,10 +1108,42 @@ export default function VectorStudio({
           {/* Active Reconstruction Input Indicator */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#111416] border border-[#323537]/50 text-[11px] text-[#849588]">
             <span>Active Pipeline Input:</span>
-            <span className={isolateForeground && selectedInput === 'isolated' ? 'text-[#00f59b] font-semibold' : 'text-white'}>
-              {isolateForeground && selectedInput === 'isolated' ? 'Isolated Cutout' : 'Original Sketch'}
+            <span
+              className={
+                selectedInput === 'refined'
+                  ? 'text-[#FF7F50] font-semibold'
+                  : selectedInput === 'isolated'
+                  ? 'text-[#00f59b] font-semibold'
+                  : 'text-white'
+              }
+            >
+              {selectedInput === 'refined'
+                ? 'Refined AI Image'
+                : selectedInput === 'isolated'
+                ? 'Isolated Cutout'
+                : 'Original Sketch'}
             </span>
           </div>
+
+          {/* AI Image Refinement Action Button */}
+          <button
+            onClick={() => onRefineSketch && onRefineSketch()}
+            disabled={loading || refinementLoading || generation25DLoading}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#111416] hover:bg-[#1d2022] border border-[#FF7F50]/40 text-[#FF7F50] text-xs font-semibold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+            title="Refine sketch contours and clean background with quality validation"
+          >
+            {refinementLoading ? (
+              <>
+                <span className="material-symbols-outlined text-base animate-spin">refresh</span>
+                <span>Refining...</span>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-base">auto_fix_high</span>
+                <span>AI Refine</span>
+              </>
+            )}
+          </button>
 
           {/* Llama 3.2 Vision Analysis Button */}
           <button
