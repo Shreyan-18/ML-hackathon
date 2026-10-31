@@ -24,3 +24,8 @@ outputs/reconstructions/*
 Thumbs.db
 .vscode/
 .idea/
+
+# Graphify local machine paths and cache
+graphify-out/.graphify_*
+graphify-out/cache/
+

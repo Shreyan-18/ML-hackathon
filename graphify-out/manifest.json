@@ -1,0 +1,74 @@
+{
+  "backend/__init__.py": {
+    "mtime": 1793437986.4186041,
+    "seen": 1793438522.066459,
+    "ast_hash": "67049bf644e57d87f3e987e5c1e7798e",
+    "semantic_hash": "67049bf644e57d87f3e987e5c1e7798e"
+  },
+  "backend/config.py": {
+    "mtime": 1793437986.4187517,
+    "seen": 1793438522.0664608,
+    "ast_hash": "62b41efb784943272fc9ba98f6335092",
+    "semantic_hash": "62b41efb784943272fc9ba98f6335092"
+  },
+  "backend/main.py": {
+    "mtime": 1793437986.4189215,
+    "seen": 1793438522.066462,
+    "ast_hash": "d87795fe063469a7094ae96989b4729f",
+    "semantic_hash": "d87795fe063469a7094ae96989b4729f"
+  },
+  "backend/preprocessing.py": {
+    "mtime": 1793437986.4191375,
+    "seen": 1793438522.066462,
+    "ast_hash": "edeb234ac549088cbf7e90f20f50128f",
+    "semantic_hash": "edeb234ac549088cbf7e90f20f50128f"
+  },
+  "backend/reconstruction.py": {
+    "mtime": 1793437986.4192717,
+    "seen": 1793438522.066463,
+    "ast_hash": "e6f27ea145d2e0ace8bdf2936d00ec1c",
+    "semantic_hash": "e6f27ea145d2e0ace8bdf2936d00ec1c"
+  },
+  "tests/__init__.py": {
+    "mtime": 1793437986.4195724,
+    "seen": 1793438522.066463,
+    "ast_hash": "26f555924e7f75a662cc01de3f3a441b",
+    "semantic_hash": "26f555924e7f75a662cc01de3f3a441b"
+  },
+  "tests/conftest.py": {
+    "mtime": 1793437986.4197123,
+    "seen": 1793438522.066464,
+    "ast_hash": "6c2d6a23137f1ac0d93dbebcc222b78b",
+    "semantic_hash": "6c2d6a23137f1ac0d93dbebcc222b78b"
+  },
+  "tests/test_preprocessing.py": {
+    "mtime": 1793437986.419866,
+    "seen": 1793438522.066464,
+    "ast_hash": "7cac0d2f284a69d55f4549f776e534f6",
+    "semantic_hash": "7cac0d2f284a69d55f4549f776e534f6"
+  },
+  ".agents/rules/graphify.md": {
+    "mtime": 1793438158.643446,
+    "seen": 1793438522.0664651,
+    "ast_hash": "f1e53ecc9194573d3c28fc116c743a2e",
+    "semantic_hash": "f1e53ecc9194573d3c28fc116c743a2e"
+  },
+  ".agents/workflows/graphify.md": {
+    "mtime": 1793438158.6436203,
+    "seen": 1793438522.0664651,
+    "ast_hash": "6d73634a678cf1e1c71930adf80bd1f0",
+    "semantic_hash": "6d73634a678cf1e1c71930adf80bd1f0"
+  },
+  "README.md": {
+    "mtime": 1793437986.4184237,
+    "seen": 1793438522.0664651,
+    "ast_hash": "a5db02fb425acf59ec38774cb981e2ba",
+    "semantic_hash": "a5db02fb425acf59ec38774cb981e2ba"
+  },
+  "requirements.txt": {
+    "mtime": 1793437986.419393,
+    "seen": 1793438522.066466,
+    "ast_hash": "308a5b816dd8d04db84babfb0a1e8862",
+    "semantic_hash": "308a5b816dd8d04db84babfb0a1e8862"
+  }
+}
