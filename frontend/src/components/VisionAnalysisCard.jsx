@@ -98,15 +98,26 @@ export default function VisionAnalysisCard({
               <span className="material-symbols-outlined text-xs">auto_fix_high</span>
               <span>AI Refined Sketch (InstantMesh Ready)</span>
             </span>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                refinementData.is_fallback
-                  ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
-                  : 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
-              }`}
-            >
-              {refinementData.is_fallback ? 'Fallback Activated' : 'Quality Validated'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {refinementData.source_used && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                  refinementData.source_used === 'isolated'
+                    ? 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
+                    : 'bg-[#FF7F50]/20 text-[#FF7F50] border-[#FF7F50]/40'
+                }`}>
+                  {refinementData.source_used === 'isolated' ? '✂️ Isolated Subject' : '✏️ Real Sketch'}
+                </span>
+              )}
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                  refinementData.is_fallback
+                    ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
+                    : 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
+                }`}
+              >
+                {refinementData.is_fallback ? 'Fallback Activated' : 'Quality Validated'}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
@@ -128,6 +139,18 @@ export default function VisionAnalysisCard({
                 <span className="text-[#849588]">Silhouette IoU:</span>
                 <span className="font-semibold text-white">
                   {(refinementData.validation.silhouette_iou * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[#272a2d] pb-1">
+                <span className="text-[#849588]">Scale Retention:</span>
+                <span className="font-semibold text-[#00f59b]">
+                  {((refinementData.validation.scale_ratio ?? 1.0) * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[#272a2d] pb-1">
+                <span className="text-[#849588]">Stroke Contrast:</span>
+                <span className="font-semibold text-white">
+                  {(refinementData.validation.contrast_ratio * 100).toFixed(0)}%
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#272a2d] pb-1">

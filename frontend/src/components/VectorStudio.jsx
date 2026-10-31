@@ -39,6 +39,8 @@ export default function VectorStudio({
   refinedPreviewUrl = null,
   refinementUserPrompt = '',
   setRefinementUserPrompt,
+  refinementSource = 'isolated',
+  onSelectRefinementSource,
 }) {
   const [activeTab, setActiveTab] = useState('sketch'); // 'sketch' or 'upload'
   const [brushColor, setBrushColor] = useState('#FF7F50');
@@ -482,6 +484,45 @@ export default function VectorStudio({
             </button>
           </div>
 
+          {/* Source Selector: Choose between Isolated Foreground vs Real Sketch */}
+          {isolationData && (
+            <div className="flex items-center gap-1 p-1 rounded-full bg-[#0c0f11] border border-[#323537]/80 text-xs shadow-inner">
+              <span className="text-[10px] text-[#849588] font-bold px-1 uppercase tracking-wider hidden sm:inline">Refine Target:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectRefinementSource && onSelectRefinementSource('isolated');
+                  if (refineSketch && onRefineSketch) onRefineSketch(null, 'isolated');
+                }}
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 transition-all ${
+                  refinementSource === 'isolated'
+                    ? 'bg-[#00f59b] text-[#003920] shadow-[0_0_8px_rgba(0,245,155,0.4)]'
+                    : 'text-[#849588] hover:text-white hover:bg-[#1d2022]'
+                }`}
+                title="Refine the background-isolated object"
+              >
+                <span className="material-symbols-outlined text-xs">content_cut</span>
+                <span>Isolated Subject</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectRefinementSource && onSelectRefinementSource('original');
+                  if (refineSketch && onRefineSketch) onRefineSketch(null, 'original');
+                }}
+                className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 transition-all ${
+                  refinementSource === 'original'
+                    ? 'bg-[#FF7F50] text-white shadow-[0_0_8px_rgba(255,127,80,0.4)]'
+                    : 'text-[#849588] hover:text-white hover:bg-[#1d2022]'
+                }`}
+                title="Refine the raw hand-drawn sketch directly"
+              >
+                <span className="material-symbols-outlined text-xs">draw</span>
+                <span>Real Sketch</span>
+              </button>
+            </div>
+          )}
+
           <div className="h-5 w-px bg-[#323537]/50 hidden md:block"></div>
 
           {/* Realtime badges */}
@@ -649,15 +690,46 @@ export default function VectorStudio({
 
       {/* Collapsible Refinement Guidance Drawer */}
       {showPromptInput && (
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-[#111416] border-b border-[#323537]/40 text-xs">
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-[#111416] border-b border-[#323537]/40 text-xs flex-wrap">
           <span className="material-symbols-outlined text-sm text-[#FF7F50]">tune</span>
+          {isolationData && (
+            <div className="flex items-center gap-1 bg-[#191c1e] p-1 rounded-lg border border-[#323537]">
+              <span className="text-[#849588] text-[10px] uppercase font-bold px-1">Source:</span>
+              <button
+                type="button"
+                onClick={() => onSelectRefinementSource && onSelectRefinementSource('isolated')}
+                className={`px-2 py-0.5 rounded text-xs font-semibold flex items-center gap-1 transition-all ${
+                  refinementSource === 'isolated'
+                    ? 'bg-[#00f59b] text-[#003920] shadow-sm'
+                    : 'text-[#bfc9c3] hover:text-white'
+                }`}
+                title="Refine the background-isolated foreground object"
+              >
+                <span className="material-symbols-outlined text-xs">content_cut</span>
+                <span>Isolated Subject</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectRefinementSource && onSelectRefinementSource('original')}
+                className={`px-2 py-0.5 rounded text-xs font-semibold flex items-center gap-1 transition-all ${
+                  refinementSource === 'original'
+                    ? 'bg-[#FF7F50] text-white shadow-sm'
+                    : 'text-[#bfc9c3] hover:text-white'
+                }`}
+                title="Refine the raw original sketch"
+              >
+                <span className="material-symbols-outlined text-xs">draw</span>
+                <span>Real Sketch</span>
+              </button>
+            </div>
+          )}
           <span className="text-[#849588] text-[11px] whitespace-nowrap">Refinement Guidance:</span>
           <input
             type="text"
             value={refinementUserPrompt}
             onChange={(e) => setRefinementUserPrompt && setRefinementUserPrompt(e.target.value)}
             placeholder="e.g. sharp chamfered lines, sci-fi metallic chassis, clean minimalist contours..."
-            className="flex-1 bg-[#191c1e] border border-[#323537] rounded-lg px-3 py-1.5 text-white placeholder-[#849588] focus:outline-none focus:border-[#FF7F50]"
+            className="flex-1 bg-[#191c1e] border border-[#323537] rounded-lg px-3 py-1.5 text-white placeholder-[#849588] focus:outline-none focus:border-[#FF7F50] min-w-[200px]"
           />
           <button
             onClick={() => onRefineSketch && onRefineSketch()}
@@ -742,7 +814,10 @@ export default function VectorStudio({
                 />
                 <div className="absolute bottom-3 left-3 bg-[#0c0f11]/90 backdrop-blur-md px-3 py-1 rounded-md text-[11px] text-[#FF7F50] border border-[#FF7F50]/30 font-mono flex items-center gap-1.5 shadow-lg">
                   <span className="material-symbols-outlined text-xs">auto_fix_high</span>
-                  <span>AI Refined • {refinementData?.is_fallback ? 'Fallback Used (Structure Protected)' : 'Structure Validated'}</span>
+                  <span>
+                    AI Refined ({refinementData?.source_used === 'isolated' ? 'Isolated Subject' : 'Real Sketch'}) •{' '}
+                    {refinementData?.is_fallback ? 'Fallback' : 'Validated'}
+                  </span>
                 </div>
                 {refinementData && (
                   <div className="absolute top-3 right-3 bg-[#0c0f11]/90 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] text-white border border-[#323537] font-mono flex items-center gap-2 shadow-lg">

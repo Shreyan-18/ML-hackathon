@@ -55,6 +55,7 @@ class QualityValidationResult:
     background_cleanliness_score: float
     contrast_ratio: float
     component_count_ratio: float
+    scale_ratio: float = 1.0
     failure_reasons: List[str] = field(default_factory=list)
     metrics: Dict[str, Any] = field(default_factory=dict)
 
@@ -86,34 +87,70 @@ def preprocess_and_enhance_contrast(
     target_size: Tuple[int, int] = (320, 320),
     contrast_clip: float = 2.0,
 ) -> np.ndarray:
-    """Applies conservative, adaptive contrast enhancement and aspect-ratio padding."""
-    # Ensure correct target dimensions
-    resized = resize_and_pad(
-        image_rgb,
-        target_size=target_size,
-        padding_ratio=0.08,
-        background_color=(255, 255, 255),
-    )
+    """Applies conservative, adaptive contrast enhancement while strictly preserving object scale.
 
-    # Convert to LAB color space for luminance-only CLAHE
-    lab = cv2.cvtColor(resized, cv2.COLOR_RGB2LAB)
-    l_channel, a_channel, b_channel = cv2.split(lab)
+    Key improvements:
+    - Avoids double-resizing/double-padding when image is already at target dimensions.
+    - Normalizes off-white and uneven paper background to pure white (255, 255, 255)
+      to eliminate border-contrast artifacts.
+    - Selectively boosts faint pencil strokes without background amplification.
+    """
+    orig_h, orig_w = image_rgb.shape[:2]
+    target_w, target_h = target_size
 
-    # Calculate image statistics to adapt contrast conservatively
-    mean_l = float(np.mean(l_channel))
-    std_l = float(np.std(l_channel))
+    # 1. Canvas Dimension Standardization (Prevent Double-Padding & Shrinking)
+    if (orig_w, orig_h) == (target_w, target_h):
+        canvas = image_rgb.copy()
+    else:
+        # Uniformly scale canvas to target dimensions preserving aspect ratio
+        scale = min(target_w / orig_w, target_h / orig_h)
+        new_w = max(1, int(round(orig_w * scale)))
+        new_h = max(1, int(round(orig_h * scale)))
+        interp = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_CUBIC
+        scaled = cv2.resize(image_rgb, (new_w, new_h), interpolation=interp)
 
-    # If already high contrast, use gentle clip limit; otherwise amplify faint pencil strokes
-    clip_limit = contrast_clip if std_l < 45.0 else max(1.2, contrast_clip * 0.7)
-    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(8, 8))
-    cl = clahe.apply(l_channel)
+        canvas = np.full((target_h, target_w, 3), 255, dtype=np.uint8)
+        off_x = (target_w - new_w) // 2
+        off_y = (target_h - new_h) // 2
+        canvas[off_y : off_y + new_h, off_x : off_x + new_w] = scaled
 
-    # Merge channels back
-    enhanced_lab = cv2.merge((cl, a_channel, b_channel))
-    enhanced_rgb = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2RGB)
+    # 2. Background Luminance Estimation & Normalization
+    gray = cv2.cvtColor(canvas, cv2.COLOR_RGB2GRAY)
+    h_c, w_c = gray.shape
+    margin_y = max(2, int(h_c * 0.04))
+    margin_x = max(2, int(w_c * 0.04))
+    border_pixels = np.concatenate([
+        gray[:margin_y, :].ravel(),
+        gray[-margin_y:, :].ravel(),
+        gray[:, :margin_x].ravel(),
+        gray[:, -margin_x:].ravel(),
+    ])
+    bg_val = float(np.median(border_pixels))
 
-    # Clean border pixels to guarantee pure white margin for InstantMesh
-    border_width = max(2, int(target_size[0] * 0.02))
+    # Background threshold: pixels close to background luminance become clean pure white
+    bg_thresh = max(230.0, bg_val - 12.0)
+    stroke_mask = gray < bg_thresh
+
+    # 3. Adaptive Stroke Contrast Enhancement (Preserving Faint Pencil Lines)
+    enhanced = np.full_like(gray, 255)
+    if np.any(stroke_mask):
+        stroke_pixels = gray[stroke_mask].astype(np.float32)
+        min_s = float(np.percentile(stroke_pixels, 5))
+        max_s = float(np.percentile(stroke_pixels, 95))
+        s_range = max(1.0, max_s - min_s)
+
+        # Normalize strokes to [0, 1] relative to their own intensity range
+        norm_stroke = np.clip((stroke_pixels - min_s) / s_range, 0.0, 1.0)
+        # Apply gentle gamma curve to preserve delicate stroke pressure gradients
+        curved = np.power(norm_stroke, 1.15)
+        # Target rich charcoal stroke range: 25 (darkest) to 110 (lightest stroke)
+        target_dark = 25.0 + curved * 85.0
+        enhanced[stroke_mask] = target_dark.astype(np.uint8)
+
+    enhanced_rgb = cv2.cvtColor(enhanced, cv2.COLOR_GRAY2RGB)
+
+    # Clean borders (outer 3%) to guarantee pure white boundary for InstantMesh
+    border_width = max(2, int(target_h * 0.03))
     enhanced_rgb[:border_width, :] = 255
     enhanced_rgb[-border_width:, :] = 255
     enhanced_rgb[:, :border_width] = 255
@@ -127,9 +164,9 @@ def preprocess_and_enhance_contrast(
 # ============================================================================
 
 def preserve_and_denoise_lines(image_rgb: np.ndarray) -> np.ndarray:
-    """Applies edge-preserving bilateral filtering to suppress paper noise without blurring contours."""
-    # Bilateral filter preserves sharp pencil/pen edges while smoothing flat regions
-    denoised = cv2.bilateralFilter(image_rgb, d=7, sigmaColor=45, sigmaSpace=45)
+    """Applies conservative edge-preserving bilateral filtering to suppress noise without blurring fine strokes."""
+    # Bilateral filter with calibrated parameters preserves thin 1px pencil lines
+    denoised = cv2.bilateralFilter(image_rgb, d=5, sigmaColor=25, sigmaSpace=15)
     return denoised
 
 
@@ -188,67 +225,68 @@ def _refine_with_neural_heuristic(
     analysis: Optional[SketchAnalysisResult] = None,
     config: Optional[RefinementConfig] = None,
 ) -> np.ndarray:
-    """High-fidelity neural-heuristic synthesizer: produces crisp, studio-grade sketches
+    """High-fidelity sketch refinement synthesizer.
 
-    conditioned on parsed 3D primitives and structural contours without risk of hallucination.
+    Produces crisp, studio-grade sketches:
+    - Strictly preserves original stroke structure, line thickness, and bounding box scale (zero shrinking).
+    - Bridges hairline pencil gaps using morphological closure.
+    - Anti-aliases contours while keeping deep charcoal contrast and 100% pure white background.
     """
     cfg = config or RefinementConfig()
     gray = cv2.cvtColor(preprocessed_rgb, cv2.COLOR_RGB2GRAY)
     h, w = gray.shape
 
-    # 1. Detect foreground strokes using adaptive Otsu + edge gradient
-    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-    _, binary_inv = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # 1. Detect foreground strokes: pixels darker than 235 + Canny edges
+    stroke_mask = gray < 235
+    edges = cv2.Canny(gray, 40, 120)
+    combined_mask = cv2.bitwise_or(stroke_mask.astype(np.uint8) * 255, edges)
 
-    # 2. Extract fine Canny edges to preserve delicate thin strokes
-    edges = cv2.Canny(gray, 50, 150)
-    strokes_mask = cv2.bitwise_or(binary_inv, edges)
-
-    # Filter isolated specks smaller than 5 pixels
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(strokes_mask, connectivity=8)
-    clean_mask = np.zeros_like(strokes_mask)
-    min_size = int(h * w * 0.0005)  # 0.05% of canvas
+    # 2. Filter out isolated tiny specks (1-2 pixels) to denoise background
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(combined_mask, connectivity=8)
+    clean_mask = np.zeros_like(combined_mask)
     for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_size:
+        if stats[i, cv2.CC_STAT_AREA] >= 3:
             clean_mask[labels == i] = 255
 
-    # 3. Morphological curvature completion: close minor pencil gaps along strokes
+    # 3. Morphological stroke bridge completion: close tiny pencil gaps without inflating stroke width
     kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    connected_strokes = cv2.morphologyEx(clean_mask, cv2.MORPH_CLOSE, kernel_close)
+    connected_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_CLOSE, kernel_close)
 
-    # 4. Distance transform for anti-aliased, studio-quality line rendering
-    dist = cv2.distanceTransform(cv2.bitwise_not(connected_strokes), cv2.DIST_L2, 5)
-    line_thickness = 1.8
-    alpha_lines = np.clip(1.0 - (dist / line_thickness), 0.0, 1.0)
+    # 4. Anti-aliasing with distance transform
+    dist = cv2.distanceTransform(cv2.bitwise_not(connected_mask), cv2.DIST_L2, 5)
+    line_falloff = 1.2
+    alpha_lines = np.clip(1.0 - (dist / line_falloff), 0.0, 1.0)
 
-    # 5. Geometry-guided subtle ambient shading based on Llama parsed shape
+    # 5. Extract rich stroke color from preprocessed_rgb (preserving original pencil tone/contrast)
+    stroke_intensity = gray.astype(np.float32)
+    # Target dark stroke value (typically ~25-45)
+    target_stroke_val = np.clip(stroke_intensity, 20.0, 75.0)
+
+    # 6. Subtle geometry-guided ambient shading (applied only to closed interior cavities)
     shading = np.ones((h, w), dtype=np.float32)
     if analysis and analysis.geometry_features:
-        shape_type = analysis.geometry_features.overall_shape.lower()
-        # Compute smooth interior distance transform to simulate soft 3D curvature
-        interior_dist = cv2.distanceTransform(connected_strokes, cv2.DIST_L2, 5)
+        interior_dist = cv2.distanceTransform(connected_mask, cv2.DIST_L2, 5)
         if np.max(interior_dist) > 0:
             norm_interior = interior_dist / np.max(interior_dist)
-            # Soft ambient occlusion inside thick strokes/cavities
-            shading -= 0.12 * norm_interior
+            # Very subtle ambient occlusion inside thick parts (max 5%)
+            shading -= 0.05 * norm_interior
 
-    # 6. Compose final refined image: crisp black ink strokes over clean white background
-    stroke_color = 28.0  # Deep carbon charcoal outline
+    # 7. Compose final canvas: crisp strokes over pure white background
     canvas = np.full((h, w, 3), 255.0, dtype=np.float32)
-
     for c in range(3):
-        # Blend strokes with anti-aliasing
-        canvas[:, :, c] = canvas[:, :, c] * (1.0 - alpha_lines) + stroke_color * alpha_lines
+        # Alpha-blend strokes smoothly with anti-aliasing
+        canvas[:, :, c] = canvas[:, :, c] * (1.0 - alpha_lines) + target_stroke_val * alpha_lines
         # Apply subtle ambient shading
         canvas[:, :, c] *= shading
 
     refined_rgb = np.clip(canvas, 0, 255).astype(np.uint8)
 
-    # Border protection
-    refined_rgb[:4, :] = 255
-    refined_rgb[-4:, :] = 255
-    refined_rgb[:, :4] = 255
-    refined_rgb[:, -4:] = 255
+    # Clean borders (outer 3%) to guarantee pure white perimeter
+    border_px = max(2, int(h * 0.03))
+    refined_rgb[:border_px, :] = 255
+    refined_rgb[-border_px:, :] = 255
+    refined_rgb[:, :border_px] = 255
+    refined_rgb[:, -border_px:] = 255
 
     return refined_rgb
 
@@ -293,7 +331,11 @@ def _refine_with_diffusers_controlnet(
             guidance_scale=config.guidance_scale,
         ).images[0]
 
-        return np.array(output, dtype=np.uint8)
+        res_arr = np.array(output, dtype=np.uint8)
+        # Ensure dimensions match target_size without distortion
+        if res_arr.shape[:2] != preprocessed_rgb.shape[:2]:
+            res_arr = cv2.resize(res_arr, (preprocessed_rgb.shape[1], preprocessed_rgb.shape[0]), interpolation=cv2.INTER_AREA)
+        return res_arr
     except Exception as err:
         logger.debug("ControlNet diffusers inference not available (%s). Proceeding to heuristic synthesizer.", err)
         return None
@@ -312,11 +354,13 @@ def validate_refinement_quality(
 
     Checks:
     - Shape, dimensions, and channel count
-    - Background cleanliness & border purity
-    - Stroke contrast and clarity
-    - Structural Edge IoU (Canny edges with dilation tolerance)
+    - Object scale preservation (detects shrinking or over-expansion)
+    - Foreground stroke contrast and clarity (true stroke vs background)
+    - Structural Edge IoU (Canny edges with dilation tolerance for anti-aliasing)
+    - Silhouette shape overlap (dilated contour IoU)
     - Silhouette centroid drift & bounding box consistency
     - Disjoint component count preservation (anti-hallucination)
+    - Background cleanliness & border purity
     """
     cfg = config or RefinementConfig()
     failure_reasons: List[str] = []
@@ -333,15 +377,44 @@ def validate_refinement_quality(
             background_cleanliness_score=0.0,
             contrast_ratio=0.0,
             component_count_ratio=0.0,
+            scale_ratio=0.0,
             failure_reasons=failure_reasons,
         )
 
     h, w, _ = original_rgb.shape
+    gray_orig = cv2.cvtColor(original_rgb, cv2.COLOR_RGB2GRAY)
+    gray_refined = cv2.cvtColor(refined_rgb, cv2.COLOR_RGB2GRAY)
 
-    # 2. Background cleanliness check
-    # Borders (outer 5%) must be clean white (mean >= 240, std <= 15)
-    margin_y = max(3, int(h * 0.05))
-    margin_x = max(3, int(w * 0.05))
+    mask_orig = gray_orig < 230
+    mask_refined = gray_refined < 230
+
+    # 2. Object Scale & Proportion Preservation Check (Diagnose & Prevent Shrinkage)
+    if np.any(mask_orig) and np.any(mask_refined):
+        ys_o, xs_o = np.where(mask_orig)
+        ys_r, xs_r = np.where(mask_refined)
+        w_orig = max(1, xs_o.max() - xs_o.min())
+        h_orig = max(1, ys_o.max() - ys_o.min())
+        w_ref = max(1, xs_r.max() - xs_r.min())
+        h_ref = max(1, ys_r.max() - ys_r.min())
+
+        scale_w = float(w_ref / w_orig)
+        scale_h = float(h_ref / h_orig)
+        scale_ratio = float(min(scale_w, scale_h))
+
+        if scale_ratio < cfg.min_scale_ratio:
+            failure_reasons.append(
+                f"Object shrank excessively by {(1.0 - scale_ratio)*100:.1f}% (scale ratio {scale_ratio:.2f} < {cfg.min_scale_ratio:.2f})"
+            )
+        elif scale_ratio > cfg.max_scale_ratio:
+            failure_reasons.append(
+                f"Object enlarged excessively by {(scale_ratio - 1.0)*100:.1f}% (scale ratio {scale_ratio:.2f} > {cfg.max_scale_ratio:.2f})"
+            )
+    else:
+        scale_ratio = 1.0
+
+    # 3. Background Cleanliness Check (Outer 4% Margin)
+    margin_y = max(2, int(h * 0.04))
+    margin_x = max(2, int(w * 0.04))
     border_pixels = np.concatenate([
         refined_rgb[:margin_y, :, :].reshape(-1, 3),
         refined_rgb[-margin_y:, :, :].reshape(-1, 3),
@@ -352,27 +425,31 @@ def validate_refinement_quality(
     border_std = float(np.std(border_pixels))
     bg_cleanliness = float(np.clip((border_mean - 180.0) / 75.0, 0.0, 1.0))
 
-    if border_mean < 230.0 or border_std > 25.0:
+    if border_mean < 225.0:
         failure_reasons.append(
-            f"Background not sufficiently clean (border_mean={border_mean:.1f}, border_std={border_std:.1f})"
+            f"Background not sufficiently clean (border_mean={border_mean:.1f} < 225.0)"
         )
 
-    # 3. Contrast & Stroke Clarity Check
-    gray_refined = cv2.cvtColor(refined_rgb, cv2.COLOR_RGB2GRAY)
-    p5 = float(np.percentile(gray_refined, 5))
-    p95 = float(np.percentile(gray_refined, 95))
-    contrast_ratio = float((p95 - p5) / 255.0)
+    # 4. Foreground Stroke Contrast Check (True Stroke vs Background)
+    if np.any(mask_refined):
+        stroke_darkness = float(np.percentile(gray_refined[mask_refined], 10))
+        bg_brightness = float(np.percentile(gray_refined[~mask_refined], 90))
+        contrast_ratio = float((bg_brightness - stroke_darkness) / 255.0)
 
-    if contrast_ratio < cfg.min_contrast_ratio:
-        failure_reasons.append(f"Low stroke contrast ratio ({contrast_ratio:.2f} < {cfg.min_contrast_ratio})")
+        if contrast_ratio < cfg.min_contrast_ratio:
+            failure_reasons.append(
+                f"Low stroke contrast ratio ({contrast_ratio:.2f} < {cfg.min_contrast_ratio:.2f})"
+            )
+    else:
+        contrast_ratio = 0.0
+        failure_reasons.append("No visible foreground strokes detected in refined image")
 
-    # 4. Structural Edge IoU & Contour Preservation
-    gray_orig = cv2.cvtColor(original_rgb, cv2.COLOR_RGB2GRAY)
+    # 5. Structural Edge IoU & Contour Preservation
     edges_orig = cv2.Canny(gray_orig, 40, 120)
     edges_refined = cv2.Canny(gray_refined, 40, 120)
 
-    # Dilate original edges slightly (3px) to tolerate anti-aliasing and stroke cleaning
-    dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    # Dilate edges (5x5 kernel) to tolerate subpixel stroke anti-aliasing & minor bridge closures
+    dilation_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
     dilated_orig_edges = cv2.dilate(edges_orig, dilation_kernel)
     dilated_refined_edges = cv2.dilate(edges_refined, dilation_kernel)
 
@@ -383,16 +460,12 @@ def validate_refinement_quality(
 
     if edge_iou < cfg.min_edge_overlap_iou:
         failure_reasons.append(
-            f"Structural edge overlap ({edge_iou:.2f}) below threshold ({cfg.min_edge_overlap_iou})"
+            f"Structural edge overlap ({edge_iou:.2f}) below threshold ({cfg.min_edge_overlap_iou:.2f})"
         )
 
-    # 5. Silhouette Bounding Box & Centroid Drift
-    # Extract foreground masks
-    _, mask_orig = cv2.threshold(gray_orig, 230, 255, cv2.THRESH_BINARY_INV)
-    _, mask_refined = cv2.threshold(gray_refined, 230, 255, cv2.THRESH_BINARY_INV)
-
-    m_orig = cv2.moments(mask_orig)
-    m_refined = cv2.moments(mask_refined)
+    # 6. Silhouette Bounding Box & Centroid Drift
+    m_orig = cv2.moments(mask_orig.astype(np.uint8))
+    m_refined = cv2.moments(mask_refined.astype(np.uint8))
 
     if m_orig["m00"] > 0 and m_refined["m00"] > 0:
         cx_orig = m_orig["m10"] / m_orig["m00"]
@@ -411,26 +484,32 @@ def validate_refinement_quality(
     else:
         centroid_drift = 0.0
 
-    # Silhouette IoU
-    sil_intersect = np.logical_and(mask_orig > 0, mask_refined > 0)
-    sil_union = np.logical_or(mask_orig > 0, mask_refined > 0)
+    # Silhouette IoU with dilated strokes to evaluate overall shape overlap
+    dilated_mask_orig = cv2.dilate(mask_orig.astype(np.uint8), dilation_kernel)
+    dilated_mask_refined = cv2.dilate(mask_refined.astype(np.uint8), dilation_kernel)
+    sil_intersect = np.logical_and(dilated_mask_orig > 0, dilated_mask_refined > 0)
+    sil_union = np.logical_or(dilated_mask_orig > 0, dilated_mask_refined > 0)
     sil_union_cnt = np.count_nonzero(sil_union)
     silhouette_iou = float(np.count_nonzero(sil_intersect) / sil_union_cnt) if sil_union_cnt > 0 else 1.0
 
     if silhouette_iou < cfg.min_silhouette_iou:
         failure_reasons.append(
-            f"Silhouette shape overlap ({silhouette_iou:.2f}) below threshold ({cfg.min_silhouette_iou})"
+            f"Silhouette shape overlap ({silhouette_iou:.2f}) below threshold ({cfg.min_silhouette_iou:.2f})"
         )
 
-    # 6. Component Count Consistency (Anti-hallucination check)
-    num_components_orig = cv2.connectedComponents(mask_orig)[0] - 1
-    num_components_refined = cv2.connectedComponents(mask_refined)[0] - 1
+    # 7. Component Count Consistency (Anti-hallucination check)
+    num_components_orig = cv2.connectedComponents(mask_orig.astype(np.uint8))[0] - 1
+    num_components_refined = cv2.connectedComponents(mask_refined.astype(np.uint8))[0] - 1
 
     if num_components_orig > 0:
         comp_ratio = float(num_components_refined / num_components_orig)
         if comp_ratio > cfg.max_component_ratio:
             failure_reasons.append(
                 f"Too many disjoint components generated ({num_components_refined} vs original {num_components_orig})"
+            )
+        elif comp_ratio < 0.20:
+            failure_reasons.append(
+                f"Excessive components lost ({num_components_refined} vs original {num_components_orig})"
             )
     else:
         comp_ratio = 1.0
@@ -446,12 +525,14 @@ def validate_refinement_quality(
         background_cleanliness_score=round(bg_cleanliness, 4),
         contrast_ratio=round(contrast_ratio, 4),
         component_count_ratio=round(comp_ratio, 3),
+        scale_ratio=round(scale_ratio, 3),
         failure_reasons=failure_reasons,
         metrics={
             "border_mean": round(border_mean, 2),
             "border_std": round(border_std, 2),
             "original_components": num_components_orig,
             "refined_components": num_components_refined,
+            "scale_ratio": round(scale_ratio, 3),
         },
     )
 

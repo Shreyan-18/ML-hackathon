@@ -399,6 +399,7 @@ def api_refine_sketch(
         "background_cleanliness_score": refine_res.validation.background_cleanliness_score,
         "contrast_ratio": refine_res.validation.contrast_ratio,
         "component_count_ratio": refine_res.validation.component_count_ratio,
+        "scale_ratio": refine_res.validation.scale_ratio,
         "failure_reasons": refine_res.validation.failure_reasons,
         "metrics": refine_res.validation.metrics,
     }

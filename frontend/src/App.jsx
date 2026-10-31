@@ -39,6 +39,7 @@ export default function App() {
   const [refinedFile, setRefinedFile] = useState(null);
   const [refinedPreviewUrl, setRefinedPreviewUrl] = useState(null);
   const [refinementUserPrompt, setRefinementUserPrompt] = useState('');
+  const [refinementSource, setRefinementSource] = useState('isolated'); // 'isolated' or 'original'
 
   // 2.5D Volumetric Generation States
   const [generation25DData, setGeneration25DData] = useState(null);
@@ -116,15 +117,27 @@ export default function App() {
     }
   };
 
-  // AI Sketch Refinement Trigger
-  const handleRefineSketch = async (promptOverride = null) => {
+  // AI Sketch Refinement Trigger (Supports refining either Isolated Foreground or Real Sketch)
+  const handleRefineSketch = async (promptOverride = null, sourceOverride = null) => {
     setRefinementError(null);
     setRefinementLoading(true);
 
     try {
-      let fileToUpload = selectedFile;
-      if (!fileToUpload) {
-        fileToUpload = await getCanvasFile();
+      const activeSource = sourceOverride || (
+        isolatedFile ? refinementSource : 'original'
+      );
+      if (sourceOverride) {
+        setRefinementSource(sourceOverride);
+      }
+
+      let fileToUpload = null;
+      if (activeSource === 'isolated' && isolatedFile) {
+        fileToUpload = isolatedFile;
+      } else {
+        fileToUpload = selectedFile;
+        if (!fileToUpload) {
+          fileToUpload = await getCanvasFile();
+        }
       }
 
       if (!fileToUpload) {
@@ -150,6 +163,7 @@ export default function App() {
       }
 
       const data = await res.json();
+      data.source_used = activeSource;
       setRefinementData(data);
 
       const effectiveFilename = data.effective_image_path.split(/[/\\]/).pop();
@@ -170,10 +184,11 @@ export default function App() {
 
       if (!data.is_fallback) {
         setSelectedInput('refined');
-        setSuccessToast(`Sketch refined! Structure validated (Edge IoU: ${(data.validation.edge_overlap_iou * 100).toFixed(0)}%)`);
+        const sourceLabel = activeSource === 'isolated' ? 'Isolated Foreground' : 'Real Sketch';
+        setSuccessToast(`Refined ${sourceLabel}! (Edge IoU: ${(data.validation.edge_overlap_iou * 100).toFixed(0)}%)`);
       } else {
-        setSelectedInput('original');
-        setSuccessToast(`Refinement rejected by validation; fell back to preprocessed sketch.`);
+        setSelectedInput(isolateForeground && isolationData ? 'isolated' : 'original');
+        setSuccessToast(`Refinement rejected by validation; fell back to safe preprocessed sketch.`);
       }
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (err) {
@@ -191,7 +206,7 @@ export default function App() {
       if (refinementData && !refinementData.is_fallback) {
         setSelectedInput('refined');
       } else {
-        handleRefineSketch();
+        handleRefineSketch(null, isolatedFile ? 'isolated' : 'original');
       }
     } else {
       if (selectedInput === 'refined') {
@@ -513,6 +528,8 @@ export default function App() {
             refinedPreviewUrl={refinedPreviewUrl}
             refinementUserPrompt={refinementUserPrompt}
             setRefinementUserPrompt={setRefinementUserPrompt}
+            refinementSource={refinementSource}
+            onSelectRefinementSource={setRefinementSource}
           />
 
           {/* Dual Panel Grid: 3D Viewport (8 cols) & Llama 3.2 Vision Analysis (4 cols) */}
@@ -540,6 +557,7 @@ export default function App() {
                 generation25DData={generation25DData}
                 refinementData={refinementData}
                 refinedPreviewUrl={refinedPreviewUrl}
+                refinementSource={refinementSource}
                 apiBase={API_BASE}
               />
             </div>

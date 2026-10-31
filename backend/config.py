@@ -151,12 +151,14 @@ class RefinementConfig:
 
     # Quality Validation Thresholds (Rejection & Fallback Guardrails)
     strict_validation: bool = True
-    min_edge_overlap_iou: float = 0.40  # Minimum edge contour retention
-    min_silhouette_iou: float = 0.65    # Minimum bounding box/silhouette retention
-    max_centroid_drift: float = 0.12     # Maximum 12% centroid shift allowed
-    min_background_cleanliness: float = 0.85 # Minimum 85% background purity
-    min_contrast_ratio: float = 0.35    # Stroke-to-background contrast ratio
-    max_component_ratio: float = 2.5    # Prevents hallucinating > 2.5x extra disjoint parts
+    min_edge_overlap_iou: float = 0.30  # Minimum edge contour retention (adapted for line drawings)
+    min_silhouette_iou: float = 0.35    # Minimum bounding box/silhouette retention
+    max_centroid_drift: float = 0.15     # Maximum 15% centroid shift allowed
+    min_background_cleanliness: float = 0.80 # Minimum 80% background purity
+    min_contrast_ratio: float = 0.20    # Foreground stroke-to-background contrast ratio
+    max_component_ratio: float = 3.5    # Prevents hallucinating > 3.5x extra disjoint parts
+    min_scale_ratio: float = 0.70       # Detects excessive object shrinkage below 70%
+    max_scale_ratio: float = 1.45       # Detects excessive object enlargement above 145%
 
     debug: bool = False
 

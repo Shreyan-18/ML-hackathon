@@ -149,6 +149,37 @@ def test_refine_sketch_pipeline_end_to_end(mock_clean_sketch: Path, tmp_path: Pa
     assert Path(res.effective_image_path).exists()
     assert res.validation.edge_overlap_iou > 0.40
     assert res.validation.background_cleanliness_score >= 0.80
+    assert res.validation.passed is True
+    assert res.is_fallback is False
+    assert 0.85 <= res.validation.scale_ratio <= 1.15
+
+
+def test_faint_pencil_sketch_contrast_enhancement(mock_faint_noisy_sketch: Path, tmp_path: Path):
+    """Verifies that faint pencil strokes are boosted into high-contrast outlines and pass validation."""
+    res = refine_sketch_pipeline(
+        input_image_path=mock_faint_noisy_sketch,
+        output_dir=tmp_path / "faint_out",
+        target_size=(320, 320),
+        perform_vision_analysis=False,
+    )
+    assert res.success is True
+    assert res.validation.passed is True
+    assert res.is_fallback is False
+    assert res.validation.contrast_ratio >= 0.50
+    assert res.validation.background_cleanliness_score >= 0.90
+
+
+def test_quality_validation_detects_excessive_object_shrinkage(mock_clean_sketch: Path):
+    """Verifies that if an image process shrinks the object excessively (>30%), validation catches it."""
+    orig_rgb = np.array(Image.open(mock_clean_sketch).convert("RGB"))
+    # Create shrunken version (35% scale of original)
+    shrunken_rgb = np.full((320, 320, 3), 255, dtype=np.uint8)
+    cv2.rectangle(shrunken_rgb, (140, 150), (180, 160), (0, 0, 0), 2)
+
+    val_res = validate_refinement_quality(orig_rgb, shrunken_rgb, config=RefinementConfig(strict_validation=True))
+    assert val_res.passed is False
+    assert val_res.is_fallback is True
+    assert any("shrank" in r.lower() for r in val_res.failure_reasons)
 
 
 def test_api_refine_sketch_endpoint(mock_clean_sketch: Path):
