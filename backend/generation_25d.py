@@ -53,16 +53,127 @@ class Generation25DResult:
     gemini_backend: Optional[str] = None
 
 
-def get_solid_sketch_silhouette(binary_mask: np.ndarray) -> np.ndarray:
-    """Closes and fills hollow stroke sketches into a solid volumetric silhouette.
+def detect_sketch_openings(
+    binary_strokes: np.ndarray,
+    analysis: Optional[Any] = None,
+    min_hole_area: int = 35,
+) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
+    """Identifies intentional holes, handle loops, and hollow apertures in a sketch.
 
-    For line sketches where strokes outline forms with open gaps (e.g. tree trunk bottoms,
-    open curves, detached limbs), multi-scale morphological closing and outer flood-fill
-    inversion reconstructs the intended solid enclosed 3D volume.
+    Distinguishes intentional openings (genus >= 1, ring holes, mug handle loops)
+    from solid interior components (e.g. chair seats, backrests, bodies) by combining
+    stroke contour topology with semantic vision analysis.
+    """
+    h, w = binary_strokes.shape[:2]
+    if len(binary_strokes.shape) == 3:
+        strokes = cv2.cvtColor(binary_strokes, cv2.COLOR_BGR2GRAY)
+    else:
+        strokes = binary_strokes.copy()
+    strokes = (strokes > 0).astype(np.uint8) * 255
+    strokes[:2, :] = 0
+    strokes[-2:, :] = 0
+    strokes[:, :2] = 0
+    strokes[:, -2:] = 0
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    closed = cv2.morphologyEx(strokes, cv2.MORPH_CLOSE, kernel)
+    closed[:2, :] = 0
+    closed[-2:, :] = 0
+    closed[:, :2] = 0
+    closed[:, -2:] = 0
+
+    flood_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
+    filled = closed.copy()
+    cv2.floodFill(filled, flood_mask, (0, 0), 255)
+    envelope = (filled == 0).astype(np.uint8) * 255 | closed
+    total_area = np.count_nonzero(envelope)
+    if total_area < 50:
+        return envelope, []
+
+    obj_type = (getattr(analysis, "object_type", "") or getattr(analysis, "category", "")).lower() if analysis else ""
+    part_names = [getattr(p, "name", "").lower() for p in getattr(analysis, "visible_parts", [])] if analysis else []
+
+    has_handle_hint = any("handle" in p or "loop" in p for p in part_names) or any(k in obj_type for k in ["mug", "pitcher", "teapot", "kettle", "cup"])
+    is_torus_hint = any(k in obj_type for k in ["ring", "torus", "donut", "washer", "wheel", "loop"])
+
+    coords = cv2.findNonZero(envelope)
+    if coords is None:
+        return envelope, []
+    ox, oy, ow, oh = cv2.boundingRect(coords)
+
+    contours, hier = cv2.findContours(closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    solid_mask = envelope.copy()
+    openings = []
+
+    if hier is not None and len(hier) > 0:
+        for i, h_info in enumerate(hier[0]):
+            parent = h_info[3]
+            if parent == -1:
+                continue
+
+            cnt = contours[i]
+            area = cv2.contourArea(cnt)
+            if area < min_hole_area or area > total_area * 0.42:
+                continue
+
+            bx, by, bw, bh = cv2.boundingRect(cnt)
+            cx, cy = bx + bw / 2.0, by + bh / 2.0
+
+            aspect = float(bh) / max(1, bw)
+            if aspect > 3.5 or aspect < 0.28:
+                # Elongated thin strut interior (e.g. leg, slat, post), not an open hole
+                continue
+
+            dist_center = np.sqrt((cx - (ox + ow / 2.0)) ** 2 + (cy - (oy + oh / 2.0)) ** 2)
+            is_centered = dist_center < max(ow, oh) * 0.18
+            is_lateral = (cx < ox + ow * 0.32) or (cx > ox + ow * 0.68)
+
+            hole_m = np.zeros((h, w), dtype=np.uint8)
+            cv2.drawContours(hole_m, [cnt], -1, 255, -1)
+            dilated = cv2.dilate(hole_m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (23, 23)))
+            reaches_exterior = np.any((dilated > 0) & (filled == 255))
+
+            is_intentional = False
+            opening_type = ""
+
+            if (is_torus_hint or is_centered) and reaches_exterior and (0.70 <= aspect <= 1.40):
+                is_intentional = True
+                opening_type = "ring_center_hole"
+            elif has_handle_hint and is_lateral and reaches_exterior:
+                is_intentional = True
+                opening_type = "handle_loop_opening"
+            elif is_lateral and reaches_exterior and area <= total_area * 0.22 and ("chair" not in obj_type):
+                is_intentional = True
+                opening_type = "lateral_loop_opening"
+
+            if is_intentional:
+                cv2.drawContours(solid_mask, [cnt], -1, 0, -1)
+                openings.append({
+                    "type": opening_type,
+                    "area": float(area),
+                    "center": [float(cx), float(cy)],
+                })
+
+    smooth_k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    solid_mask = cv2.morphologyEx(solid_mask, cv2.MORPH_CLOSE, smooth_k)
+    return solid_mask, openings
+
+
+def get_solid_sketch_silhouette(
+    binary_mask: np.ndarray,
+    analysis: Optional[Any] = None,
+) -> np.ndarray:
+    """Closes and fills hollow stroke sketches into a solid volumetric silhouette while preserving intentional openings.
+
+    For line sketches where strokes outline forms, multi-scale morphological closing connects stroke breaks,
+    while topological opening analysis strictly preserves through-holes (rings, handle loops, negative spaces).
     """
     h, w = binary_mask.shape[:2]
-    # Ensure outer 2px border is 0 so floodFill from (0, 0) can always traverse around the object
-    mask_work = binary_mask.copy()
+    if len(binary_mask.shape) == 3:
+        mask_work = cv2.cvtColor(binary_mask, cv2.COLOR_BGR2GRAY)
+    else:
+        mask_work = binary_mask.copy()
+    mask_work = (mask_work > 0).astype(np.uint8) * 255
     mask_work[:2, :] = 0
     mask_work[-2:, :] = 0
     mask_work[:, :2] = 0
@@ -70,36 +181,35 @@ def get_solid_sketch_silhouette(binary_mask: np.ndarray) -> np.ndarray:
 
     stroke_ratio = np.count_nonzero(mask_work) / float(h * w)
     if stroke_ratio > 0.35:
-        # Even for dense masks, fill internal enclosed holes
-        flood_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
-        filled = mask_work.copy()
-        cv2.floodFill(filled, flood_mask, (0, 0), 255)
-        filled_inv = cv2.bitwise_not(filled)
-        return mask_work | filled_inv
+        # Check for intentional openings in dense masks
+        solid_with_holes, _ = detect_sketch_openings(mask_work, analysis=analysis)
+        return solid_with_holes
 
     best_solid = mask_work.copy()
-    for k in [9, 17, 27, 37, 47]:
+    for k in [3, 5, 7, 9, 13]:
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
         closed = cv2.morphologyEx(mask_work, cv2.MORPH_CLOSE, kernel)
         closed[:2, :] = 0
         closed[-2:, :] = 0
         closed[:, :2] = 0
         closed[:, -2:] = 0
-        flood_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
-        filled = closed.copy()
-        cv2.floodFill(filled, flood_mask, (0, 0), 255)
-        filled_inv = cv2.bitwise_not(filled)
-        solid = closed | filled_inv
-        ratio = np.count_nonzero(solid) / float(h * w)
-        if 0.04 <= ratio <= 0.82:
-            smooth_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-            return cv2.morphologyEx(solid, cv2.MORPH_CLOSE, smooth_kernel)
+
+        # Detect and preserve intentional openings (rings, handle loops)
+        solid_with_holes, _ = detect_sketch_openings(closed, analysis=analysis)
+        ratio = np.count_nonzero(solid_with_holes) / float(h * w)
+        if 0.03 <= ratio <= 0.85:
+            smooth_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            return cv2.morphologyEx(solid_with_holes, cv2.MORPH_CLOSE, smooth_kernel)
         if ratio > np.count_nonzero(best_solid) / float(h * w) and ratio <= 0.88:
-            best_solid = solid
+            best_solid = solid_with_holes
+
     return best_solid
 
 
-def extract_clean_object_mask(image_rgb: np.ndarray) -> Tuple[np.ndarray, np.ndarray, bool]:
+def extract_clean_object_mask(
+    image_rgb: np.ndarray,
+    analysis: Optional[Any] = None,
+) -> Tuple[np.ndarray, np.ndarray, bool]:
     """Extracts a clean solid object silhouette mask and detects if the input is a line sketch.
 
     Returns:
@@ -114,7 +224,7 @@ def extract_clean_object_mask(image_rgb: np.ndarray) -> Tuple[np.ndarray, np.nda
     stroke_ratio = np.count_nonzero(stroke_binary) / float(h * w)
 
     # Check if the interior has large white holes (characteristic of a hollow 2D line drawing)
-    solid_mask = get_solid_sketch_silhouette(stroke_binary)
+    solid_mask = get_solid_sketch_silhouette(stroke_binary, analysis=analysis)
     solid_ratio = np.count_nonzero(solid_mask) / float(h * w)
 
     # It's a line sketch if raw strokes cover < 22% of the canvas or solidifying significantly expands the area
@@ -124,7 +234,7 @@ def extract_clean_object_mask(image_rgb: np.ndarray) -> Tuple[np.ndarray, np.nda
     # intersect/combine appropriately
     border_fg_ratio = np.count_nonzero(border_fg_mask) / float(h * w)
     if not is_line_sketch and 0.03 <= border_fg_ratio <= 0.85:
-        final_mask = get_solid_sketch_silhouette(border_fg_mask)
+        final_mask = get_solid_sketch_silhouette(border_fg_mask, analysis=analysis)
     else:
         final_mask = solid_mask
 
@@ -137,21 +247,29 @@ def estimate_depth_map(
     method: str = "balloon",
     depth_scale: float = 1.0,
     invert_depth: bool = False,
+    analysis: Optional[Any] = None,
 ) -> np.ndarray:
     """Estimates a continuous relative depth map from a sketch or rendered object image.
 
-    Uses an inflation/balloon algorithm based on Euclidean distance transform
-    and subtle surface shading, giving flat enclosed sketch shapes believable
-    3D volume and depth.
+    Uses geometry-aware inflation based on Euclidean distance transform
+    and subtle surface shading. Preserves flat planar surfaces for cubes/cuboids
+    while providing smooth dome curvature for organic/spherical forms.
     """
     h, w = image_rgb.shape[:2]
 
     # Generate foreground mask if not provided
     if mask is None:
-        cleaned_rgb, mask, _ = extract_clean_object_mask(image_rgb)
+        cleaned_rgb, mask, _ = extract_clean_object_mask(image_rgb, analysis=analysis)
     else:
         cleaned_rgb = image_rgb
-        mask = get_solid_sketch_silhouette(mask)
+        mask = get_solid_sketch_silhouette(mask, analysis=analysis)
+
+    geo = getattr(analysis, "geometry_features", None) if analysis else None
+    has_flat_faces = getattr(geo, "has_flat_faces", False) if geo else False
+    primary_primitive = getattr(geo, "primary_primitive", None) if geo else None
+    obj_str = (getattr(analysis, "object_type", "") + " " + getattr(analysis, "description", "")).lower() if analysis else ""
+    if any(kw in obj_str for kw in ["cube", "cuboid", "box", "block", "brick", "prism"]):
+        has_flat_faces = True
 
     if method == "balloon":
         # 1. Euclidean distance transform from outer borders inwards
@@ -159,23 +277,31 @@ def estimate_depth_map(
         max_dist = np.max(dist)
 
         if max_dist > 0:
-            norm_dist = dist / max_dist
-            # Dome / spherical curvature profile: sqrt(1 - (1 - d)^2)
-            dome_profile = np.sqrt(np.clip(1.0 - (1.0 - norm_dist) ** 2, 0.0, 1.0))
+            if has_flat_faces or primary_primitive in ("cube", "cuboid"):
+                # Planar plateau: flat front surface with crisp steep bevel
+                bevel = max(1.5, min(8.0, max_dist * 0.10))
+                profile = np.clip(dist / bevel, 0.0, 1.0)
+            else:
+                norm_dist = dist / max_dist
+                # Dome / spherical curvature profile: sqrt(1 - (1 - d)^2)
+                profile = np.sqrt(np.clip(1.0 - (1.0 - norm_dist) ** 2, 0.0, 1.0))
         else:
-            dome_profile = np.zeros((h, w), dtype=np.float32)
+            profile = np.zeros((h, w), dtype=np.float32)
 
         # 2. Modulate with sketch surface shading / inner lines
         gray_f = cv2.cvtColor(cleaned_rgb, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0
         shading = 1.0 - gray_f  # darker lines/shading = higher local detail
 
-        # Combine macro volume (dome) with micro detail (shading)
-        combined = 0.85 * dome_profile + 0.15 * (shading * (mask > 0))
+        # Combine macro volume (profile) with micro detail (shading)
+        combined = 0.88 * profile + 0.12 * (shading * (mask > 0))
         combined = np.clip(combined * depth_scale, 0.0, 1.0)
 
-        # Smooth slightly to remove high frequency noise
-        smoothed = cv2.GaussianBlur(combined, (5, 5), 1.0)
-        depth_uint8 = (smoothed * 255.0).astype(np.uint8)
+        # For planar surfaces, skip Gaussian blur to avoid rounding flat faces
+        if has_flat_faces or primary_primitive in ("cube", "cuboid"):
+            depth_uint8 = (combined * 255.0).astype(np.uint8)
+        else:
+            smoothed = cv2.GaussianBlur(combined, (5, 5), 1.0)
+            depth_uint8 = (smoothed * 255.0).astype(np.uint8)
         depth_uint8[mask == 0] = 0
 
     else:
@@ -442,11 +568,12 @@ def _render_studio_shading(
     mask_f = (mask > 0).astype(np.float32)[:, :, None]
     mask_soft = cv2.GaussianBlur(mask_f, (3, 3), 0)[:, :, None]
 
-    # Softly accentuate subtle inner feature lines inside the object mask
+    # Accentuate original structural sketch lines with high contrast and clarity
     gray_img = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2GRAY)
-    lines_blurred = cv2.GaussianBlur(gray_img, (3, 3), 0.8)
-    line_factor = 0.86 + 0.14 * (lines_blurred.astype(np.float32) / 255.0)[:, :, None]
-    lit_with_details = lit * line_factor
+    dark_strokes = np.clip((242.0 - gray_img.astype(np.float32)) / 210.0, 0.0, 1.0)
+    # Blend prominent crisp strokes over lit surface so 3D model recognizes components
+    stroke_factor = 1.0 - 0.72 * dark_strokes[:, :, None]
+    lit_with_details = lit * stroke_factor
 
     final = lit_with_details * mask_soft + bg * (1.0 - mask_soft)
     return np.clip(final, 0, 255).astype(np.uint8)

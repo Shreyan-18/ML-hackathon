@@ -112,10 +112,14 @@ def _prepare_image_for_cloud_3d(
     image_path: Path,
     out_directory: Path,
     base_name: str,
+    analysis: Optional[Any] = None,
 ) -> Tuple[Path, np.ndarray, np.ndarray, np.ndarray, bool]:
     """Prepares a clean, solid volumetric input image for 3D reconstruction models.
 
     - Strips fake-transparent checkerboard backgrounds to pure white.
+    - Preserves aspect ratio, crisp outlines, and structural details without double-cropping.
+    - Scales onto a high-fidelity 512x512 canvas with minimal 5% margin (occupying ~90% of canvas).
+    - Preserves intentional openings (rings, handle loops) rather than filling them blindly.
     - If the input is a hollow 2D line drawing, renders a solid, volumetrically shaded
       3D concept image on pure white so InstantMesh / SF3D / Hunyuan3D reconstructs a
       solid 3D volume instead of broken wireframe lines.
@@ -124,8 +128,8 @@ def _prepare_image_for_cloud_3d(
         (prepared_image_path, render_rgb, solid_mask, depth_map, is_line_sketch)
     """
     img_rgb = load_image_safely(image_path)
-    cleaned_rgb, solid_mask, is_line_sketch = extract_clean_object_mask(img_rgb)
-    depth_map = estimate_depth_map(cleaned_rgb, mask=solid_mask)
+    cleaned_rgb, solid_mask, is_line_sketch = extract_clean_object_mask(img_rgb, analysis=analysis)
+    depth_map = estimate_depth_map(cleaned_rgb, mask=solid_mask, analysis=analysis)
     normal_map = compute_surface_normals(depth_map)
 
     if is_line_sketch:
@@ -141,6 +145,46 @@ def _prepare_image_for_cloud_3d(
         # Keep original object colors/textures, with background cleanly set to pure white
         solid_render_rgb = cleaned_rgb.copy()
         solid_render_rgb[solid_mask == 0] = [255, 255, 255]
+
+    # Standardize to 512x512 native input resolution with aspect-ratio preserved centering
+    target_dim = instantmesh_config.input_resolution
+    cur_h, cur_w = solid_render_rgb.shape[:2]
+    if (cur_w, cur_h) != (target_dim, target_dim):
+        coords = cv2.findNonZero((solid_mask > 0).astype(np.uint8))
+        if coords is not None:
+            bx, by, bw, bh = cv2.boundingRect(coords)
+            crop_rgb = solid_render_rgb[by : by + bh, bx : bx + bw]
+            crop_mask = solid_mask[by : by + bh, bx : bx + bw]
+            crop_depth = depth_map[by : by + bh, bx : bx + bw]
+        else:
+            bx, by, bw, bh = 0, 0, cur_w, cur_h
+            crop_rgb, crop_mask, crop_depth = solid_render_rgb, solid_mask, depth_map
+
+        # Scale with 5% margin
+        margin = int(target_dim * 0.05)
+        avail = max(1, target_dim - 2 * margin)
+        scale = min(avail / max(1, bw), avail / max(1, bh))
+        new_w = max(1, int(round(bw * scale)))
+        new_h = max(1, int(round(bh * scale)))
+
+        resized_rgb = cv2.resize(crop_rgb, (new_w, new_h), interpolation=cv2.INTER_AREA if scale < 1.0 else cv2.INTER_CUBIC)
+        resized_mask = cv2.resize(crop_mask, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+        resized_depth = cv2.resize(crop_depth, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+        canvas_rgb = np.full((target_dim, target_dim, 3), 255, dtype=np.uint8)
+        canvas_mask = np.zeros((target_dim, target_dim), dtype=np.uint8)
+        canvas_depth = np.zeros((target_dim, target_dim), dtype=np.uint8)
+
+        off_x = (target_dim - new_w) // 2
+        off_y = (target_dim - new_h) // 2
+
+        canvas_rgb[off_y : off_y + new_h, off_x : off_x + new_w] = resized_rgb
+        canvas_mask[off_y : off_y + new_h, off_x : off_x + new_w] = resized_mask
+        canvas_depth[off_y : off_y + new_h, off_x : off_x + new_w] = resized_depth
+
+        solid_render_rgb = canvas_rgb
+        solid_mask = canvas_mask
+        depth_map = canvas_depth
 
     prepared_path = out_directory / f"{base_name}_cloud_ready.png"
     Image.fromarray(solid_render_rgb, mode="RGB").save(prepared_path)
@@ -184,9 +228,10 @@ def _reconstruct_with_instantmesh_hf(
                 api_name="/check_input_image",
             )
 
+            # Pass do_remove_background from config (False for pre-cleaned pure-white images to prevent rembg edge erosion)
             prep_res = client.predict(
                 input_image=handle_file(str(image_path)),
-                do_remove_background=True,
+                do_remove_background=instantmesh_config.do_remove_background,
                 api_name="/preprocess",
             )
 
@@ -239,6 +284,7 @@ def _reconstruct_with_fast_hf_spaces(
     image_path: Path,
     out_directory: Path,
     base_name: str,
+    prompt: Optional[str] = None,
 ) -> Tuple[bool, Optional[str], Optional[str], Optional[str], Dict[str, Any]]:
     """Attempts single-pass 3D reconstruction via fast Hugging Face ZeroGPU Spaces (SF3D, Hunyuan3D-2, TripoSR)."""
     if _is_testing_env() or not instantmesh_config.enabled:
@@ -268,7 +314,7 @@ def _reconstruct_with_fast_hf_spaces(
                 if "stable-fast-3d" in space_id.lower():
                     res = client.predict(
                         input_image=handle_file(str(image_path)),
-                        foreground_ratio=0.85,
+                        foreground_ratio=0.90,
                         texture_resolution=1024,
                         remesh_option="None",
                         target_vertex_count=-1,
@@ -287,14 +333,15 @@ def _reconstruct_with_fast_hf_spaces(
                         return True, str(obj_dest), str(glb_dest), space_id, stats
 
                 elif "hunyuan3d" in space_id.lower():
+                    caption_text = prompt or f"A high quality clean 3D solid model of a {base_name}"
                     res = client.predict(
-                        caption="",
+                        caption=caption_text,
                         image=handle_file(str(image_path)),
                         steps=25,
                         guidance_scale=5.5,
                         seed=42,
                         octree_resolution="256",
-                        check_box_rembg=True,
+                        check_box_rembg=False,
                         api_name="/shape_generation",
                     )
                     cand_file = res[0] if isinstance(res, (list, tuple)) else res
@@ -405,6 +452,37 @@ def _reconstruct_with_nvidia_trellis(
         return False, None, None, {"exception": str(err)}
 
 
+def _apply_edge_aware_postprocessing(
+    mesh: Any,
+    has_sharp_edges: bool = False,
+    has_flat_faces: bool = False,
+) -> Any:
+    """Applies geometry-aware mesh postprocessing.
+
+    Preserves flat planar surfaces, straight edges, and sharp corners,
+    avoiding destructive global Laplacian smoothing on cubes, cuboids,
+    and faceted primitives while smoothing discretization noise on curved forms.
+    """
+    import trimesh
+    try:
+        trimesh.repair.fix_normals(mesh)
+        trimesh.repair.fix_inversion(mesh)
+    except Exception:
+        pass
+
+    if has_sharp_edges or has_flat_faces:
+        # Sharp/planar surfaces: do not melt corners or round planar faces!
+        return mesh
+
+    # For smooth/curved organic surfaces, apply gentle Laplacian smoothing
+    try:
+        trimesh.smoothing.filter_laplacian(mesh, lamb=0.18, iterations=1)
+    except Exception:
+        pass
+
+    return mesh
+
+
 def _generate_dense_volumetric_mesh(
     image_path: Path,
     out_directory: Path,
@@ -412,15 +490,16 @@ def _generate_dense_volumetric_mesh(
     solid_render_rgb: Optional[np.ndarray] = None,
     solid_mask: Optional[np.ndarray] = None,
     depth_map: Optional[np.ndarray] = None,
+    analysis: Optional[Any] = None,
 ) -> Tuple[Path, Path, Dict[str, Any]]:
     """Synthesizes a true 360° closed, silhouette-carved, vertex-colored 3D mesh (OBJ and GLB).
 
     Unlike a flat 2.5D relief tile that spans the entire square canvas, this engine:
     1. Carves the 3D geometry strictly to the object's silhouette contour (zero background slab).
-    2. Inflates both a front 3D surface (+Z) and a sculpted symmetric back 3D surface (-Z).
-    3. Stitches all silhouette boundary edges to form a closed, watertight 360° manifold.
-    4. Bakes per-vertex RGB colors from the studio concept / input image so the 3D asset
-       renders with rich shading and color in Three.js, Blender, and Unity.
+    2. Applies geometry-aware semantic profiles (rotational cross-sections for bottles/vases/mugs;
+       local medial-axis feature inflation for chairs/furniture/toys so limbs and legs retain true cylindrical thickness).
+    3. Stitches front and back surfaces with watertight boundary side-wall quads forming a closed 360° manifold.
+    4. Bakes rich vertex RGB colors with ambient occlusion crevice darkening for photorealistic 3D rendering.
     """
     import trimesh
 
@@ -429,74 +508,163 @@ def _generate_dense_volumetric_mesh(
             image_path, out_directory, base_name
         )
 
-    resolution = 72 if _is_testing_env() else 128
+    resolution = 112 if _is_testing_env() else 128
 
     mask_res = cv2.resize(solid_mask, (resolution, resolution), interpolation=cv2.INTER_NEAREST)
-    # Keep a 1px border margin of 0 around the grid so boundary stitching is always clean
     mask_res[0, :] = 0
     mask_res[-1, :] = 0
     mask_res[:, 0] = 0
     mask_res[:, -1] = 0
 
-    # Ensure non-empty mask if the input sketch was extremely small
     if np.count_nonzero(mask_res) < 16:
         rr, cc = np.ogrid[:resolution, :resolution]
         center = resolution // 2
         radius = resolution // 3
         mask_res[((rr - center) ** 2 + (cc - center) ** 2) <= radius**2] = 255
 
-    # Smooth distance-transform dome inside the rescaled silhouette
-    dist = cv2.distanceTransform(mask_res, cv2.DIST_L2, 5)
-    max_d = float(np.max(dist))
-    if max_d > 0:
-        norm_d = dist / max_d
-        dome_z = np.sqrt(np.clip(1.0 - (1.0 - norm_d) ** 2, 0.0, 1.0))
-    else:
-        dome_z = (mask_res > 0).astype(np.float32) * 0.5
+    # Determine object semantic geometry from vision analysis or base name
+    obj_str = ""
+    if analysis is not None:
+        obj_str = f"{getattr(analysis, 'object_type', '')} {getattr(analysis, 'category', '')} {getattr(analysis, 'description', '')}".lower()
+    if not obj_str.strip():
+        obj_str = base_name.lower()
 
-    depth_res = cv2.resize(depth_map, (resolution, resolution), interpolation=cv2.INTER_LINEAR).astype(np.float32) / 255.0
+    geo = getattr(analysis, "geometry_features", None) if analysis else None
+    primary_primitive = getattr(geo, "primary_primitive", None) if geo else None
+    has_sharp_edges = getattr(geo, "has_sharp_edges", False) if geo else False
+    has_flat_faces = getattr(geo, "has_flat_faces", False) if geo else False
+
+    is_cube_or_cuboid = (
+        primary_primitive in ("cube", "cuboid")
+        or any(kw in obj_str for kw in ["cube", "cuboid", "box", "block", "brick", "prism", "rectangular prism", "square box"])
+    )
+    is_sphere = (
+        primary_primitive == "sphere"
+        or (any(kw in obj_str for kw in ["sphere", "ball", "globe", "orb"]) and not any(kw in obj_str for kw in ["bottle", "vase", "cup", "can", "mug", "glass"]))
+    )
+    is_cylinder = (
+        primary_primitive == "cylinder"
+        or (any(kw in obj_str for kw in ["cylinder", "can", "drum"]) and not any(kw in obj_str for kw in ["bottle", "vase", "cup", "mug"]))
+    )
+    is_rotational = not is_cube_or_cuboid and (
+        is_cylinder
+        or any(kw in obj_str for kw in ["bottle", "vase", "cup", "can", "mug", "glass", "cylinder", "flask", "jar", "jug", "thermos"])
+    )
+
+    if is_cube_or_cuboid:
+        has_sharp_edges = True
+        has_flat_faces = True
+
+    dist = cv2.distanceTransform(mask_res, cv2.DIST_L2, 5)
+    max_d = float(np.max(dist)) if np.max(dist) > 0 else 1.0
+
+    z_structure = np.zeros((resolution, resolution), dtype=np.float32)
+
+    if is_cube_or_cuboid or has_flat_faces:
+        # Planar plateau with crisp steep bevel: preserves flat planar faces, straight edges, and sharp 90-degree corners
+        bevel = max(1.5, min(5.0, max_d * 0.08))
+        plateau = np.clip(dist / bevel, 0.0, 1.0)
+        max_half_thickness = 0.32
+        z_front = plateau * max_half_thickness
+        z_back = -0.90 * z_front
+
+    elif is_sphere:
+        # True continuous radial hemisphere with uniform radial curvature
+        y_idx, x_idx = np.where(mask_res > 0)
+        if len(x_idx) > 0:
+            cx = (float(np.min(x_idx)) + float(np.max(x_idx))) / 2.0
+            cy = (float(np.min(y_idx)) + float(np.max(y_idx))) / 2.0
+            r_rad = max(1.0, (float(np.max(x_idx) - np.min(x_idx)) + float(np.max(y_idx) - np.min(y_idx))) / 4.0)
+            yy, xx = np.ogrid[:resolution, :resolution]
+            d2 = (xx - cx) ** 2 + (yy - cy) ** 2
+            z_structure = np.sqrt(np.maximum(0.0, r_rad**2 - d2)) / float(resolution * 0.42)
+        max_half_thickness = 0.34
+        z_front = z_structure * max_half_thickness
+        z_front = cv2.GaussianBlur(z_front, (3, 3), 0.6)
+        z_back = -z_front
+
+    elif is_rotational:
+        # Rotational cylindrical profile along horizontal cross-sections
+        for y in range(resolution):
+            row_pixels = np.where(mask_res[y, :] > 0)[0]
+            if len(row_pixels) > 1:
+                x_min, x_max = row_pixels[0], row_pixels[-1]
+                w_span = x_max - x_min
+                r_span = w_span / 2.0
+                cx = (x_min + x_max) / 2.0
+                for x in row_pixels:
+                    dx = abs(x - cx)
+                    if dx <= r_span:
+                        z_structure[y, x] = np.sqrt(max(0.0, r_span**2 - dx**2)) / float(resolution * 0.42)
+        depth_res = cv2.resize(depth_map, (resolution, resolution), interpolation=cv2.INTER_LINEAR).astype(np.float32) / 255.0
+        max_half_thickness = 0.34
+        z_front = (0.76 * z_structure + 0.24 * depth_res) * max_half_thickness
+        z_front = cv2.GaussianBlur(z_front, (3, 3), 0.6)
+        z_back = -0.90 * z_front
+
+    else:
+        # Local feature-scale medial inflation (preserves thin chair legs, toy arms/ears, and thick torso/seats)
+        k_size = max(5, int(resolution * 0.12))
+        if k_size % 2 == 0:
+            k_size += 1
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_size, k_size))
+        local_max_d = cv2.dilate(dist, kernel)
+        local_max_d = np.maximum(local_max_d, 1.0)
+        norm_d = np.clip(dist / local_max_d, 0.0, 1.0)
+        z_structure = np.sqrt(np.clip(1.0 - (1.0 - norm_d) ** 2, 0.0, 1.0)) * (local_max_d / float(resolution * 0.35))
+        depth_res = cv2.resize(depth_map, (resolution, resolution), interpolation=cv2.INTER_LINEAR).astype(np.float32) / 255.0
+        max_half_thickness = 0.34
+        z_front = (0.76 * z_structure + 0.24 * depth_res) * max_half_thickness
+        if not has_sharp_edges:
+            z_front = cv2.GaussianBlur(z_front, (3, 3), 0.6)
+        z_back = -0.90 * z_front
+
     color_res = cv2.resize(solid_render_rgb, (resolution, resolution), interpolation=cv2.INTER_AREA)
 
-    # Combine macro spherical/cylindrical inflation with fine surface relief
-    max_half_thickness = 0.34
-    z_front = (0.75 * dome_z + 0.25 * depth_res) * max_half_thickness
-    z_front = cv2.GaussianBlur(z_front, (5, 5), 0.9)
-    # Taper to a tiny positive half-thickness at the silhouette rim so front & back meet cleanly
-    active_cells = (mask_res > 0)
-    # A vertex (r, c) is active if it belongs to at least one active cell
-    # Wait: let's define active quads (cells) where all 4 corner pixels are inside the dilated mask
-    kernel3 = np.ones((3, 3), dtype=np.uint8)
-    mask_dilated = cv2.dilate(mask_res, kernel3, iterations=1)
-    active_pixel = mask_dilated > 0
+    # Hollow container cavity sculpting (recess top rim aperture for cups, mugs, bowls, pots)
+    is_hollow_container = not is_cube_or_cuboid and any(kw in obj_str for kw in ["cup", "mug", "bowl", "pot", "vase", "glass", "bucket", "basin"])
+    if is_hollow_container:
+        y_indices, x_indices = np.where(mask_res > 0)
+        if len(y_indices) > 0:
+            top_y = int(np.min(y_indices))
+            rim_depth = max(4, int(resolution * 0.15))
+            for ry in range(top_y + 1, min(resolution, top_y + rim_depth)):
+                row_pix = np.where(mask_res[ry, :] > 0)[0]
+                if len(row_pix) > 8:
+                    wall_t = max(2, int(len(row_pix) * 0.12))
+                    inner_l = row_pix[wall_t]
+                    inner_r = row_pix[-wall_t]
+                    if inner_r > inner_l:
+                        center_col = (inner_l + inner_r) / 2.0
+                        rad_col = (inner_r - inner_l) / 2.0
+                        for cx in range(inner_l, inner_r + 1):
+                            dx_rel = abs(cx - center_col) / max(1.0, rad_col)
+                            cavity_factor = 0.18 + 0.38 * (dx_rel ** 2)
+                            z_front[ry, cx] = min(z_front[ry, cx], z_front[ry, inner_l] * cavity_factor)
 
-    cell_active = (
-        active_pixel[:-1, :-1]
-        & active_pixel[:-1, 1:]
-        & active_pixel[1:, :-1]
-        & active_pixel[1:, 1:]
+    # Identify active cells where all 4 corner pixels are inside the mask
+    active_cells = (
+        (mask_res[:-1, :-1] > 0)
+        & (mask_res[:-1, 1:] > 0)
+        & (mask_res[1:, :-1] > 0)
+        & (mask_res[1:, 1:] > 0)
     )
 
-    # Identify all grid vertices (r, c) used by at least one active cell
+    # Resolve 2x2 diagonal checkerboard pinch points to guarantee a 2-manifold watertight mesh.
+    # When two cells touch diagonally across an infinitesimal vertex while off-diagonal cells
+    # are empty, their boundary side walls would meet along a single vertical line creating
+    # a non-manifold edge with 4 incident faces. Connecting them eliminates non-manifold edges.
+    p1 = active_cells[:-1, :-1] & active_cells[1:, 1:] & (~active_cells[:-1, 1:]) & (~active_cells[1:, :-1])
+    p2 = (~active_cells[:-1, :-1]) & (~active_cells[1:, 1:]) & active_cells[:-1, 1:] & active_cells[1:, :-1]
+    active_cells[:-1, 1:][p1] = True
+    active_cells[:-1, :-1][p2] = True
+
+    # Grid vertices used by active cells
     vert_used = np.zeros((resolution, resolution), dtype=bool)
-    vert_used[:-1, :-1] |= cell_active
-    vert_used[:-1, 1:] |= cell_active
-    vert_used[1:, :-1] |= cell_active
-    vert_used[1:, 1:] |= cell_active
-
-    # Identify boundary vertices (vertices on the perimeter of the active cell region)
-    # A vertex is a boundary vertex if it is used by an active cell, but not all 4 of its surrounding cells are active
-    interior_vert = np.zeros((resolution, resolution), dtype=bool)
-    interior_vert[1:-1, 1:-1] = (
-        cell_active[:-1, :-1]
-        & cell_active[:-1, 1:]
-        & cell_active[1:, :-1]
-        & cell_active[1:, 1:]
-    )
-    boundary_vert = vert_used & (~interior_vert)
-
-    # Pin boundary vertices to z = 0.0 so the front surface and back surface fuse into a single shared seam!
-    z_front[boundary_vert] = 0.0
-    z_back = -0.88 * z_front
+    vert_used[:-1, :-1] |= active_cells
+    vert_used[:-1, 1:] |= active_cells
+    vert_used[1:, :-1] |= active_cells
+    vert_used[1:, 1:] |= active_cells
 
     xs = np.linspace(-0.5, 0.5, resolution, dtype=np.float32)
     ys = np.linspace(0.5, -0.5, resolution, dtype=np.float32)
@@ -519,55 +687,65 @@ def _generate_dense_volumetric_mesh(
             rgb = color_res[r, c]
             cr, cg, cb = int(rgb[0]), int(rgb[1]), int(rgb[2])
 
-            f_id = len(vertices)
-            vertices.append([vx, vy, zf])
-            vertex_colors.append([cr, cg, cb, 255])
-            front_idx[r, c] = f_id
+            # Ambient occlusion crevice shading (darkens narrow crevices)
+            ao = 0.76 + 0.24 * min(1.0, float(dist[r, c]) / 8.0)
 
-            if boundary_vert[r, c]:
-                # Shared seam vertex on the silhouette rim -> single watertight vertex!
-                back_idx[r, c] = f_id
-            else:
-                b_id = len(vertices)
-                vertices.append([vx, vy, zb])
-                # Slightly shaded back surface color for natural 3D depth cues
-                vertex_colors.append([int(cr * 0.88), int(cg * 0.88), int(cb * 0.88), 255])
-                back_idx[r, c] = b_id
+            f_id = len(vertices)
+            front_idx[r, c] = f_id
+            vertices.append([vx, vy, zf])
+            vertex_colors.append([int(cr * ao), int(cg * ao), int(cb * ao), 255])
+
+            b_id = len(vertices)
+            back_idx[r, c] = b_id
+            vertices.append([vx, vy, zb])
+            vertex_colors.append([int(cr * ao * 0.88), int(cg * ao * 0.88), int(cb * ao * 0.88), 255])
 
     faces: List[List[int]] = []
     for r in range(resolution - 1):
         for c in range(resolution - 1):
-            if not cell_active[r, c]:
+            if not active_cells[r, c]:
                 continue
-            f00 = int(front_idx[r, c])
-            f10 = int(front_idx[r, c + 1])
-            f01 = int(front_idx[r + 1, c])
-            f11 = int(front_idx[r + 1, c + 1])
+            f00, f10 = int(front_idx[r, c]), int(front_idx[r, c + 1])
+            f01, f11 = int(front_idx[r + 1, c]), int(front_idx[r + 1, c + 1])
+            b00, b10 = int(back_idx[r, c]), int(back_idx[r, c + 1])
+            b01, b11 = int(back_idx[r + 1, c]), int(back_idx[r + 1, c + 1])
 
             # Front surface triangles (counter-clockwise outward normal +Z)
             faces.append([f00, f01, f10])
             faces.append([f10, f01, f11])
 
-            b00 = int(back_idx[r, c])
-            b10 = int(back_idx[r, c + 1])
-            b01 = int(back_idx[r + 1, c])
-            b11 = int(back_idx[r + 1, c + 1])
-
             # Back surface triangles (reversed winding for outward normal -Z)
-            if not (b00 == b01 or b01 == b10 or b00 == b10):
-                faces.append([b00, b10, b01])
-            if not (b10 == b01 or b01 == b11 or b10 == b11):
-                faces.append([b10, b11, b01])
+            faces.append([b00, b10, b01])
+            faces.append([b10, b11, b01])
+
+            # Watertight side-wall quad stitching along outer silhouette perimeter
+            # Top edge: r - 1 not active
+            if r == 0 or not active_cells[r - 1, c]:
+                faces.append([f00, f10, b10])
+                faces.append([f00, b10, b00])
+            # Bottom edge: r + 1 not active
+            if r == resolution - 2 or not active_cells[r + 1, c]:
+                faces.append([f01, b11, f11])
+                faces.append([f01, b01, b11])
+            # Left edge: c - 1 not active
+            if c == 0 or not active_cells[r, c - 1]:
+                faces.append([f01, f00, b00])
+                faces.append([f01, b00, b01])
+            # Right edge: c + 1 not active
+            if c == resolution - 2 or not active_cells[r, c + 1]:
+                faces.append([f10, f11, b11])
+                faces.append([f10, b11, b10])
 
     v_arr = np.array(vertices, dtype=np.float32)
     f_arr = np.array(faces, dtype=np.int32)
     c_arr = np.array(vertex_colors, dtype=np.uint8)
 
     mesh = trimesh.Trimesh(vertices=v_arr, faces=f_arr, vertex_colors=c_arr, process=True)
-    try:
-        trimesh.smoothing.filter_laplacian(mesh, lamb=0.35, iterations=3)
-    except Exception:
-        pass
+    mesh = _apply_edge_aware_postprocessing(
+        mesh,
+        has_sharp_edges=has_sharp_edges,
+        has_flat_faces=has_flat_faces,
+    )
 
     obj_dest = out_directory / f"{base_name}_mesh.obj"
     glb_dest = out_directory / f"{base_name}_mesh.glb"
@@ -587,6 +765,7 @@ def _generate_dense_volumetric_mesh(
         obj_lines = [
             "# Sketch2Shape AI 360-Degree Bilateral Volumetric 3D Mesh",
             f"# Vertices: {len(v_final)}, Faces: {len(f_final)}",
+            f"# Watertight Manifold: {bool(mesh.is_watertight)}",
         ]
         for i in range(len(v_final)):
             vx, vy, vz = v_final[i]
@@ -601,9 +780,18 @@ def _generate_dense_volumetric_mesh(
     except Exception as err:
         logger.warning("OBJ export fallback: %s", err)
 
+    euler = int(mesh.euler_number) if hasattr(mesh, "euler_number") else 2
+    genus = max(0, (2 - euler) // 2)
+
     stats = {
         "vertex_count": int(len(mesh.vertices)),
         "face_count": int(len(mesh.faces)),
+        "is_watertight": bool(mesh.is_watertight),
+        "is_volume": bool(mesh.is_volume),
+        "euler_characteristic": euler,
+        "genus": genus,
+        "topology": "toroidal_or_handled" if genus >= 1 else "solid_manifold",
+        "openings_preserved": bool(genus >= 1 or is_hollow_container),
     }
     return obj_dest, glb_dest, stats
 
@@ -613,6 +801,7 @@ def reconstruct_3d(
     output_dir: Optional[str] = None,
     output_format: str = "obj",
     refinement_prompt: Optional[str] = None,
+    analysis: Optional[Any] = None,
 ) -> ReconstructionResult:
     """Executes image-to-3D reconstruction from a preprocessed model-ready sketch.
 
@@ -662,11 +851,12 @@ def reconstruct_3d(
         except Exception:
             pass
 
-    # 2. Prepare solid volumetric concept image (solves hollow wireframe & checkerboard failures)
+    # 2. Prepare solid volumetric concept image (solves hollow wireframe & checkerboard failures, preserves intentional openings)
     cloud_input_path, solid_render_rgb, solid_mask, depth_map, is_line_sketch = _prepare_image_for_cloud_3d(
         image_path=img_path,
         out_directory=out_directory,
         base_name=base_name,
+        analysis=analysis,
     )
 
     # 3. Priority 1: InstantMesh on Hugging Face Spaces (using solid concept image)
@@ -710,6 +900,7 @@ def reconstruct_3d(
         image_path=cloud_input_path,
         out_directory=out_directory,
         base_name=base_name,
+        prompt=refinement_prompt,
     )
 
     if fast_success and (fast_obj or fast_glb):
@@ -785,6 +976,7 @@ def reconstruct_3d(
         solid_render_rgb=solid_render_rgb,
         solid_mask=solid_mask,
         depth_map=depth_map,
+        analysis=analysis,
     )
 
     primary_model_path = str(dense_glb) if (output_format.lower() == "glb" and dense_glb.exists()) else str(dense_obj)
