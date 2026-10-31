@@ -488,6 +488,7 @@ def api_full_pipeline(
         processed_image_path=iso_res.composite_path,
         output_format=output_format,
         refinement_prompt=refinement_prompt,
+        analysis=analysis_res,
     )
 
     return FullPipelineResponse(
@@ -551,7 +552,7 @@ def api_analyze_sketch(
 @app.post("/api/reconstruct", response_model=ReconstructionResponse)
 def api_reconstruct_sketch_to_3d(
     file: UploadFile = File(..., description="Uploaded sketch image"),
-    target_size: int = Query(320, description="Target input size for 3D model"),
+    target_size: int = Query(512, description="Target input size for 3D model"),
     output_format: str = Query("obj", description="Output 3D mesh format (obj, glb)"),
     debug: bool = Query(False, description="Save intermediate stages for inspection"),
 ):
@@ -579,6 +580,7 @@ def api_reconstruct_sketch_to_3d(
             processed_image_path=processed_path,
             output_format=output_format,
             refinement_prompt=refinement_prompt,
+            analysis=analysis_result,
         )
     except Exception as err:
         logger.exception("3D reconstruction failed: %s", err)

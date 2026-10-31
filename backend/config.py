@@ -219,13 +219,16 @@ class InstantMeshConfig:
     space_id: str = "TencentARC/InstantMesh"
     fallback_spaces: List[str] = field(
         default_factory=lambda: [
-            "stabilityai/stable-fast-3d",
             "tencent/Hunyuan3D-2",
+            "stabilityai/stable-fast-3d",
+            "AshishGarg/InstantMesh",
             "stabilityai/TripoSR",
         ]
     )
-    sample_steps: int = 50
+    sample_steps: int = 75
     sample_seed: int = 42
+    input_resolution: int = 512
+    do_remove_background: bool = False
     timeout: float = 90.0
     enabled: bool = True
 

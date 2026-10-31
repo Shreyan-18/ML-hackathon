@@ -62,6 +62,18 @@ class GeometryFeatures(BaseModel):
         default_factory=list,
         description="List of detected primitives (e.g. ['ellipse', 'rectangle', 'parallel lines'])"
     )
+    primary_primitive: Optional[str] = Field(
+        default=None,
+        description="Primary detected primitive (e.g. 'cube', 'cuboid', 'cylinder', 'sphere', 'cone', 'irregular', 'mixed')"
+    )
+    has_sharp_edges: bool = Field(
+        default=False,
+        description="Whether the object exhibits sharp edges and flat planar facets"
+    )
+    has_flat_faces: bool = Field(
+        default=False,
+        description="Whether the object has flat planar faces rather than curved surfaces"
+    )
 
 
 class SketchAnalysisResult(BaseModel):
@@ -114,7 +126,10 @@ Return a JSON object with this exact structure:
     "symmetry": "<e.g. bilaterally symmetric along vertical plane, radial, asymmetric>",
     "proportions": "<e.g. height is roughly 1.5x diameter, seat height is half total height>",
     "stroke_characteristics": "<e.g. clean continuous lines, rough hatching, stylized curves>",
-    "observed_geometric_primitives": ["<e.g. ellipse, rectangle, cylinder, circle>"]
+    "observed_geometric_primitives": ["<e.g. ellipse, rectangle, cylinder, circle>"],
+    "primary_primitive": "<one of: 'cube', 'cuboid', 'cylinder', 'sphere', 'cone', 'irregular', 'mixed'>",
+    "has_sharp_edges": true,
+    "has_flat_faces": true
   },
   "uncertainties": [
     "<e.g. rear side is occluded by perspective>",
@@ -335,7 +350,7 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
 
     h, w = img.shape
     _, binary = cv2.threshold(img, 235, 255, cv2.THRESH_BINARY_INV)
-    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hier = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     stroke_coords = np.argwhere(binary > 0)
     if len(stroke_coords) == 0:
@@ -353,39 +368,96 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
 
     primitives = []
     has_ellipse = False
+    is_cylinder_cap = False
     has_rectangle = False
+    has_circle = False
+    has_handle = False
+    has_curved_feature = False
+    is_pure_polygon = False
+    poly_corners = 0
 
+    main_cnt = max(contours, key=cv2.contourArea) if contours else None
+    main_area = cv2.contourArea(main_cnt) if main_cnt is not None else 0
+    main_peri = cv2.arcLength(main_cnt, True) if main_cnt is not None else 0
+    approx = cv2.approxPolyDP(main_cnt, 0.04 * main_peri, True) if main_cnt is not None and main_peri > 0 else []
+    poly_corners = len(approx)
+    extent = main_area / float(bbox_w * bbox_h) if (bbox_w * bbox_h) > 0 else 0
+    circularity = (4 * np.pi * main_area) / (main_peri ** 2) if main_peri > 0 else 0
+    mcx = (x_min + x_max) / 2.0
+
+    # Determine if contour represents a sharp-edged polygon vs smooth curves
+    if poly_corners == 4 and extent > 0.72:
+        has_rectangle = True
+        is_pure_polygon = True
+    elif circularity > 0.80 and 0.86 <= aspect_ratio <= 1.14:
+        has_circle = True
+
+    # Check for ellipses, curved contours, and handle loops
     for cnt in contours:
-        if cv2.contourArea(cnt) < 20:
+        c_area = cv2.contourArea(cnt)
+        if c_area < 25:
             continue
-        peri = cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
-        if len(approx) == 4:
+        c_peri = cv2.arcLength(cnt, True)
+        if c_peri == 0:
+            continue
+        c_approx = cv2.approxPolyDP(cnt, 0.035 * c_peri, True)
+        cbx, cby, cw, ch = cv2.boundingRect(cnt)
+        ccx = cbx + cw / 2.0
+
+        if len(c_approx) == 4 and c_area / max(1.0, float(cw * ch)) > 0.72:
             has_rectangle = True
+
+        # Check handle loop
+        if abs(ccx - mcx) > bbox_w * 0.22 and (cw < bbox_w * 0.6):
+            has_handle = True
+
+        # Check fitted ellipse
         if len(cnt) >= 5:
             try:
                 ellipse = cv2.fitEllipse(cnt)
                 axes = ellipse[1]
-                if min(axes) > 10 and max(axes) / min(axes) < 3.0:
-                    has_ellipse = True
+                if min(axes) > 8 and max(axes) / min(axes) < 5.0:
+                    ell_area = np.pi * axes[0] * axes[1] / 4.0
+                    ratio = c_area / max(1.0, ell_area)
+                    if 0.80 <= ratio <= 1.20:
+                        has_ellipse = True
+                        if (cw / float(bbox_w) >= 0.72) and (ch / float(bbox_h) < 0.42):
+                            is_cylinder_cap = True
             except cv2.error:
                 pass
 
+        # Check curved dome / circular feature
+        c_circ = (4 * np.pi * c_area) / (c_peri ** 2)
+        if c_circ > 0.60 and len(c_approx) >= 5 and cnt is not main_cnt:
+            has_curved_feature = True
+
     if has_rectangle:
-        primitives.append("rectangle")
-    if has_ellipse:
-        primitives.append("ellipse / circle")
+        primitives.append("rectangle / flat planar face")
+    if has_circle:
+        primitives.append("circle / sphere")
+    elif is_cylinder_cap:
+        primitives.append("cylinder circular cap")
+    elif has_ellipse:
+        primitives.append("ellipse / curved rim")
     if aspect_ratio < 0.8:
         primitives.append("vertical linear supports")
     elif aspect_ratio > 1.2:
         primitives.append("horizontal elongated contours")
 
-    if 0.75 <= aspect_ratio <= 1.25 and has_ellipse:
+    primary_primitive: Optional[str] = None
+    has_sharp_edges = False
+    has_flat_faces = False
+
+    # 1. Coffee Mug (requires an actual handle or curved lateral loop)
+    if has_handle and (0.65 <= aspect_ratio <= 1.35):
         obj_type = "coffee mug"
         cat = "tableware"
         view = "three-quarter perspective"
         shape = "cylindrical with lateral curved appendage"
         symm = "asymmetric due to handle, bilaterally symmetric body"
+        primary_primitive = "cylinder"
+        has_sharp_edges = True
+        has_flat_faces = False
         parts = [
             VisiblePart(
                 name="cylindrical body",
@@ -415,12 +487,106 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
             "circular rim opening, flat bottom base, centered on a neutral white background, studio lighting."
         )
 
-    elif aspect_ratio < 0.85:
+    # 2. Sphere (uniform circular contour with continuous radial curvature)
+    elif has_circle and not has_rectangle and not has_handle and (0.86 <= aspect_ratio <= 1.14):
+        obj_type = "sphere"
+        cat = "geometric primitive"
+        view = "orthographic"
+        shape = "spherical with uniform continuous radial curvature"
+        symm = "radial continuous symmetry in all directions"
+        primary_primitive = "sphere"
+        has_sharp_edges = False
+        has_flat_faces = False
+        parts = [
+            VisiblePart(
+                name="spherical surface",
+                observed="single continuous circular contour with constant radius",
+                inferred="smooth 3D spherical solid volume",
+                relationships="encloses uniform radial volume from center",
+            ),
+        ]
+        uncertainties = [
+            "Surface texture is smooth without surface markings",
+        ]
+        prompt = (
+            "A perfect 3D smooth sphere model with continuous radial curvature and uniform round profile, "
+            "studio lighting on clean white background."
+        )
+
+    # 3. Cylinder (cylindrical body with circular / elliptical end caps)
+    elif is_cylinder_cap and not has_handle:
+        obj_type = "cylinder"
+        cat = "geometric primitive"
+        view = "perspective view"
+        shape = "cylindrical with flat circular end caps and curved lateral wall"
+        symm = "rotational symmetry along central axis"
+        primary_primitive = "cylinder"
+        has_sharp_edges = True
+        has_flat_faces = True
+        parts = [
+            VisiblePart(
+                name="cylindrical lateral wall",
+                observed="parallel straight boundary lines",
+                inferred="smooth curved cylindrical surface",
+                relationships="connects top and bottom circular caps",
+            ),
+            VisiblePart(
+                name="circular end cap",
+                observed="elliptical contour viewed at perspective angle",
+                inferred="flat circular planar terminal cap",
+                relationships="caps the ends of the cylinder at sharp perimeter rims",
+            ),
+        ]
+        uncertainties = [
+            "Opposite end cap is partially occluded by perspective",
+        ]
+        prompt = (
+            "A 3D solid cylinder model with smooth circular cross-section, flat planar circular caps, "
+            "sharp perimeter rim edges, studio lighting on clean white background."
+        )
+
+    # 4. Mixed Object (contains both distinct planar rectangular facet and curved / elliptical feature)
+    elif has_rectangle and (has_curved_feature or has_ellipse) and not is_cylinder_cap:
+        obj_type = "mixed geometric object"
+        cat = "geometric object"
+        view = "perspective view"
+        shape = "hybrid planar and curved volumetric geometry"
+        symm = "bilaterally symmetric along central plane"
+        primary_primitive = "mixed"
+        has_sharp_edges = True
+        has_flat_faces = True
+        parts = [
+            VisiblePart(
+                name="planar base / facet",
+                observed="straight rectangular contours",
+                inferred="flat planar structural facet",
+                relationships="forms solid base or panel",
+            ),
+            VisiblePart(
+                name="curved feature",
+                observed="circular or elliptical contours",
+                inferred="curved cylindrical or domed section",
+                relationships="integrates with planar facet at sharp junction",
+            ),
+        ]
+        uncertainties = [
+            "Internal junction curvature between planar and curved sections",
+        ]
+        prompt = (
+            "A 3D mixed geometric model with flat planar faces, sharp straight edges, "
+            "and smooth curved cylindrical sections, studio lighting on clean white background."
+        )
+
+    # 5. Chair (furniture with vertical slender supports / legs)
+    elif aspect_ratio < 0.85 and len(contours) >= 3 and not has_handle and not is_cylinder_cap:
         obj_type = "chair"
         cat = "furniture"
         view = "three-quarter perspective"
         shape = "rectangular / prismatic with slender supports"
         symm = "bilaterally symmetric along vertical axis"
+        primary_primitive = "irregular"
+        has_sharp_edges = True
+        has_flat_faces = True
         parts = [
             VisiblePart(
                 name="seat surface",
@@ -450,12 +616,100 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
             "clean wooden or matte plastic texture, centered on white background, 3D asset ready for reconstruction."
         )
 
+    # 6. Cube (equilateral square with flat planar faces and 90-degree right angles)
+    elif (has_rectangle or poly_corners == 4) and (0.80 <= aspect_ratio <= 1.25) and not has_handle:
+        obj_type = "cube"
+        cat = "geometric primitive"
+        view = "front orthographic / isometric"
+        shape = "cubic / planar faceted box with 90-degree right angle corners"
+        symm = "bilaterally symmetric along vertical and horizontal axes"
+        primary_primitive = "cube"
+        has_sharp_edges = True
+        has_flat_faces = True
+        parts = [
+            VisiblePart(
+                name="cube front face",
+                observed="straight perpendicular boundary edges forming an equilateral square",
+                inferred="perfectly flat planar quadrilateral face",
+                relationships="meets adjacent vertical and horizontal faces at sharp 90-degree right angle edges",
+            ),
+        ]
+        uncertainties = [
+            "Rear facets are inferred from front orthographic symmetry",
+        ]
+        prompt = (
+            "A perfect 3D solid cube model with flat planar faces, sharp 90-degree right-angle edges, "
+            "crisp straight corners, no rounding, studio lighting on clean white background."
+        )
+
+    # 7. Cuboid / Rectangular Prism (flat planar box with elongated aspect ratio)
+    elif (has_rectangle or poly_corners == 4) and not has_handle and not has_ellipse and (aspect_ratio < 0.80 or aspect_ratio > 1.25):
+        obj_type = "cuboid"
+        cat = "geometric primitive"
+        view = "orthographic perspective"
+        shape = "cuboid / rectangular prism with flat planar faces and sharp edges"
+        symm = "bilaterally symmetric along principal axes"
+        primary_primitive = "cuboid"
+        has_sharp_edges = True
+        has_flat_faces = True
+        parts = [
+            VisiblePart(
+                name="planar rectangular face",
+                observed="straight perpendicular boundaries forming a rectangle",
+                inferred="flat planar face of a rectangular cuboid",
+                relationships="forms main facet meeting side walls at sharp 90-degree edges",
+            ),
+        ]
+        uncertainties = [
+            "Depth extent is inferred proportionally from facet width and height",
+        ]
+        prompt = (
+            "A 3D solid rectangular cuboid box with flat planar surfaces, straight edges, "
+            "sharp perpendicular right-angle corners, studio lighting on clean white background."
+        )
+
+    # 8. Cylinder Fallback
+    elif has_ellipse and not has_handle:
+        obj_type = "cylinder"
+        cat = "geometric primitive"
+        view = "perspective view"
+        shape = "cylindrical with flat circular end caps and curved lateral wall"
+        symm = "rotational symmetry along central axis"
+        primary_primitive = "cylinder"
+        has_sharp_edges = True
+        has_flat_faces = True
+        parts = [
+            VisiblePart(
+                name="cylindrical lateral wall",
+                observed="parallel straight boundary lines",
+                inferred="smooth curved cylindrical surface",
+                relationships="connects top and bottom circular caps",
+            ),
+            VisiblePart(
+                name="circular end cap",
+                observed="elliptical contour viewed at perspective angle",
+                inferred="flat circular planar terminal cap",
+                relationships="caps the ends of the cylinder at sharp perimeter rims",
+            ),
+        ]
+        uncertainties = [
+            "Opposite end cap is partially occluded by perspective",
+        ]
+        prompt = (
+            "A 3D solid cylinder model with smooth circular cross-section, flat planar circular caps, "
+            "sharp perimeter rim edges, studio lighting on clean white background."
+        )
+
+    # 8. Vehicle / Horizontal Prop
     elif aspect_ratio > 1.3:
         obj_type = "vehicle / horizontal prop"
         cat = "transportation / prop"
         view = "side profile view"
         shape = "horizontally elongated aerodynamic silhouette"
         symm = "bilaterally symmetric along longitudinal axis"
+        primary_primitive = "irregular"
+        has_sharp_edges = True
+        has_flat_faces = False
         parts = [
             VisiblePart(
                 name="main body chassis",
@@ -479,12 +733,16 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
             "solid body geometry on white background."
         )
 
+    # 9. General / Architectural Prop Fallback
     else:
         obj_type = "architectural / geometric model" if density > 0.35 else "geometric object / prop"
         cat = "architecture / prop" if density > 0.35 else "general prop"
         view = "isometric three-quarter perspective"
         shape = "multi-tiered volumetric structure" if density > 0.35 else "compact geometric form"
         symm = "bilaterally symmetric"
+        primary_primitive = "irregular"
+        has_sharp_edges = True
+        has_flat_faces = False
         parts = [
             VisiblePart(
                 name="primary structure",
@@ -528,6 +786,9 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
             proportions=f"width-to-height ratio approximately {aspect_ratio:.2f}:1",
             stroke_characteristics="clean outer silhouette with distinct internal structural contours",
             observed_geometric_primitives=primitives or ["curved contours", "planar lines"],
+            primary_primitive=primary_primitive,
+            has_sharp_edges=has_sharp_edges,
+            has_flat_faces=has_flat_faces,
         ),
         uncertainties=uncertainties,
         reconstruction_prompt=prompt,
