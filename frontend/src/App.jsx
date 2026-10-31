@@ -7,21 +7,9 @@ import VisionAnalysisCard from './components/VisionAnalysisCard';
 import ShowcaseGallery from './components/ShowcaseGallery';
 import BriefingModal from './components/BriefingModal';
 
+const API_BASE = import.meta.env.VITE_API_BASE || '';
+
 export default function App() {
-  const [apiBase, setApiBase] = useState(() => {
-    return localStorage.getItem('sketch2shape_api_base') || import.meta.env.VITE_API_BASE || '';
-  });
-
-  const handleUpdateApiBase = (newUrl) => {
-    const trimmed = (newUrl || '').trim().replace(/\/+$/, '');
-    setApiBase(trimmed);
-    if (trimmed) {
-      localStorage.setItem('sketch2shape_api_base', trimmed);
-    } else {
-      localStorage.removeItem('sketch2shape_api_base');
-    }
-  };
-
   const [activeNav, setActiveNav] = useState('create');
   const [selectedModel, setSelectedModel] = useState('ZephyrMesh 2.5 Flagship');
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,14 +39,10 @@ export default function App() {
   const [refinedFile, setRefinedFile] = useState(null);
   const [refinedPreviewUrl, setRefinedPreviewUrl] = useState(null);
   const [refinementUserPrompt, setRefinementUserPrompt] = useState('');
-  const [refinementSource, setRefinementSource] = useState('isolated'); // 'isolated' or 'original'
 
   // 2.5D Volumetric Generation States
   const [generation25DData, setGeneration25DData] = useState(null);
   const [generation25DLoading, setGeneration25DLoading] = useState(false);
-  const [conceptPrompt, setConceptPrompt] = useState(
-    'Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.'
-  );
   const [active3DTab, setActive3DTab] = useState('mesh3d'); // 'mesh3d' or 'relief25d'
 
   // Async API States
@@ -132,27 +116,15 @@ export default function App() {
     }
   };
 
-  // AI Sketch Refinement Trigger (Supports refining either Isolated Foreground or Real Sketch)
-  const handleRefineSketch = async (promptOverride = null, sourceOverride = null) => {
+  // AI Sketch Refinement Trigger
+  const handleRefineSketch = async (promptOverride = null) => {
     setRefinementError(null);
     setRefinementLoading(true);
 
     try {
-      const activeSource = sourceOverride || (
-        isolatedFile ? refinementSource : 'original'
-      );
-      if (sourceOverride) {
-        setRefinementSource(sourceOverride);
-      }
-
-      let fileToUpload = null;
-      if (activeSource === 'isolated' && isolatedFile) {
-        fileToUpload = isolatedFile;
-      } else {
-        fileToUpload = selectedFile;
-        if (!fileToUpload) {
-          fileToUpload = await getCanvasFile();
-        }
+      let fileToUpload = selectedFile;
+      if (!fileToUpload) {
+        fileToUpload = await getCanvasFile();
       }
 
       if (!fileToUpload) {
@@ -163,7 +135,7 @@ export default function App() {
       formData.append('file', fileToUpload);
 
       const promptParam = promptOverride !== null ? promptOverride : refinementUserPrompt;
-      const url = `${apiBase}/api/refine-sketch?target_size=${targetSize}${
+      const url = `${API_BASE}/api/refine-sketch?target_size=${targetSize}${
         promptParam ? `&user_prompt=${encodeURIComponent(promptParam)}` : ''
       }&strict_validation=true`;
 
@@ -178,11 +150,10 @@ export default function App() {
       }
 
       const data = await res.json();
-      data.source_used = activeSource;
       setRefinementData(data);
 
       const effectiveFilename = data.effective_image_path.split(/[/\\]/).pop();
-      const effectiveUrl = `${apiBase}/static/refinement/${effectiveFilename}`;
+      const effectiveUrl = `${API_BASE}/static/refinement/${effectiveFilename}`;
       setRefinedPreviewUrl(effectiveUrl);
 
       // Cache effective image blob for downstream pipelines
@@ -199,11 +170,10 @@ export default function App() {
 
       if (!data.is_fallback) {
         setSelectedInput('refined');
-        const sourceLabel = activeSource === 'isolated' ? 'Isolated Foreground' : 'Real Sketch';
-        setSuccessToast(`Refined ${sourceLabel}! (Edge IoU: ${(data.validation.edge_overlap_iou * 100).toFixed(0)}%)`);
+        setSuccessToast(`Sketch refined! Structure validated (Edge IoU: ${(data.validation.edge_overlap_iou * 100).toFixed(0)}%)`);
       } else {
-        setSelectedInput(isolateForeground && isolationData ? 'isolated' : 'original');
-        setSuccessToast(`Refinement rejected by validation; fell back to safe preprocessed sketch.`);
+        setSelectedInput('original');
+        setSuccessToast(`Refinement rejected by validation; fell back to preprocessed sketch.`);
       }
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (err) {
@@ -221,7 +191,7 @@ export default function App() {
       if (refinementData && !refinementData.is_fallback) {
         setSelectedInput('refined');
       } else {
-        handleRefineSketch(null, isolatedFile ? 'isolated' : 'original');
+        handleRefineSketch();
       }
     } else {
       if (selectedInput === 'refined') {
@@ -249,7 +219,7 @@ export default function App() {
       formData.append('file', fileToUpload);
 
       const res = await fetch(
-        `${apiBase}/api/foreground-isolate?target_size=${targetSize}&method=auto`,
+        `${API_BASE}/api/foreground-isolate?target_size=${targetSize}&method=auto`,
         {
           method: 'POST',
           body: formData,
@@ -266,8 +236,8 @@ export default function App() {
 
       const rgbaFilename = data.rgba_path.split(/[/\\]/).pop();
       const compositeFilename = data.composite_path.split(/[/\\]/).pop();
-      const rgbaUrl = `${apiBase}/static/foreground/${rgbaFilename}`;
-      const compositeUrl = `${apiBase}/static/foreground/${compositeFilename}`;
+      const rgbaUrl = `${API_BASE}/static/foreground/${rgbaFilename}`;
+      const compositeUrl = `${API_BASE}/static/foreground/${compositeFilename}`;
 
       setIsolatedPreviewUrl(rgbaUrl);
 
@@ -324,7 +294,7 @@ export default function App() {
       formData.append('file', fileToUpload);
 
       const res = await fetch(
-        `${apiBase}/api/generate-25d?target_size=${targetSize}&export_relief=true&format=obj&prompt=${encodeURIComponent(conceptPrompt)}`,
+        `${API_BASE}/api/generate-25d?target_size=${targetSize}&export_relief=true&format=obj`,
         {
           method: 'POST',
           body: formData,
@@ -354,7 +324,7 @@ export default function App() {
   const handleAnalyzeVision = async () => {
     setError(null);
     setLoading(true);
-    setStatusMessage('Analyzing sketch with Gemini Vision...');
+    setStatusMessage('Analyzing sketch with Llama 3.2 Vision...');
 
     try {
       let fileToUpload = selectedFile;
@@ -369,7 +339,7 @@ export default function App() {
       const formData = new FormData();
       formData.append('file', fileToUpload);
 
-      const res = await fetch(`${apiBase}/api/analyze-sketch?target_size=${targetSize}`, {
+      const res = await fetch(`${API_BASE}/api/analyze-sketch?target_size=${targetSize}`, {
         method: 'POST',
         body: formData,
       });
@@ -382,7 +352,7 @@ export default function App() {
       const data = await res.json();
       setAnalysisData(data.analysis);
       setPreprocessedData(data.processed_image_path);
-      setSuccessToast('Sketch analyzed with Gemini Vision!');
+      setSuccessToast('Sketch analyzed with Llama 3.2 Vision!');
       setTimeout(() => setSuccessToast(null), 3000);
     } catch (err) {
       console.error(err);
@@ -397,7 +367,7 @@ export default function App() {
   const handleGenerate3D = async () => {
     setError(null);
     setLoading(true);
-    setStatusMessage('Connecting to InstantMesh Cloud GPU (ZeroGPU)...');
+    setStatusMessage('Synthesizing Mesh (SDF & InstantMesh LRM)...');
 
     try {
       const fileToUpload = await getActiveFile();
@@ -408,10 +378,8 @@ export default function App() {
       const formData = new FormData();
       formData.append('file', fileToUpload);
 
-      setStatusMessage('Synthesizing 6-View Multi-View Diffusion & Reconstructing 3D Mesh...');
-
       const res = await fetch(
-        `${apiBase}/api/reconstruct?target_size=${targetSize}&output_format=glb&debug=${debugMode}`,
+        `${API_BASE}/api/reconstruct?target_size=${targetSize}&output_format=obj&debug=${debugMode}`,
         {
           method: 'POST',
           body: formData,
@@ -430,13 +398,8 @@ export default function App() {
         setAnalysisData(data.analysis);
       }
       setPreprocessedData(data.processed_image_path);
-      const isCloud = data?.details?.engine === 'instantmesh_cloud_gpu';
-      setSuccessToast(
-        isCloud
-          ? 'InstantMesh Cloud 3D Asset Reconstructed (OBJ & GLB)!'
-          : '3D Asset Reconstructed & Validated Watertight!'
-      );
-      setTimeout(() => setSuccessToast(null), 4000);
+      setSuccessToast('3D Asset Reconstructed & Validated Watertight!');
+      setTimeout(() => setSuccessToast(null), 3500);
     } catch (err) {
       console.error(err);
       setError(err.message || '3D reconstruction failed.');
@@ -484,16 +447,14 @@ export default function App() {
         setSearchQuery={setSearchQuery}
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
-        apiBase={apiBase}
-        onUpdateApiBase={handleUpdateApiBase}
       />
 
       {/* Main Studio Viewport */}
-      <main className="pl-64 pt-24 min-h-screen relative z-20">
+      <main className="pl-64 pt-16 min-h-screen relative z-20">
         <div className="max-w-[1480px] mx-auto px-6 py-6 flex flex-col gap-8">
           {/* Toast Notification */}
           {successToast && (
-            <div className="fixed top-28 right-8 z-50 p-3 px-4 rounded-xl bg-[#00f59b] text-[#003920] font-semibold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
+            <div className="fixed top-20 right-8 z-50 p-3 px-4 rounded-xl bg-[#00f59b] text-[#003920] font-semibold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
               <span className="material-symbols-outlined text-base">check_circle</span>
               <span>{successToast}</span>
             </div>
@@ -552,29 +513,24 @@ export default function App() {
             refinedPreviewUrl={refinedPreviewUrl}
             refinementUserPrompt={refinementUserPrompt}
             setRefinementUserPrompt={setRefinementUserPrompt}
-            refinementSource={refinementSource}
-            onSelectRefinementSource={setRefinementSource}
-            // 2.5D Concept Prompt (Gemini Key 2)
-            conceptPrompt={conceptPrompt}
-            setConceptPrompt={setConceptPrompt}
           />
 
-          {/* Dual Panel Grid: 3D Viewport (8 cols) & Llama 3.2 Vision Analysis (4 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left: Interactive Three.js 3D Viewport (8 cols) */}
-            <div className="lg:col-span-8">
+          {/* Vertical Layout: 3D Image Reconstruction First, Then Sketch Understanding Below */}
+          <div className="flex flex-col gap-6 w-full">
+            {/* 1. Interactive 3D Image Reconstruction Viewport */}
+            <div className="w-full">
               <Viewport3D
                 reconstructionData={reconstructionData}
                 generation25DData={generation25DData}
                 active3DTab={active3DTab}
                 setActive3DTab={setActive3DTab}
                 sketchType={currentSketchType}
-                apiBase={apiBase}
+                apiBase={API_BASE}
               />
             </div>
 
-            {/* Right: Llama 3.2 Vision Understanding Analysis (4 cols) */}
-            <div className="lg:col-span-4">
+            {/* 2. Sketch Understanding (Vision Analysis) */}
+            <div className="w-full">
               <VisionAnalysisCard
                 analysisData={analysisData}
                 preprocessedData={preprocessedData}
@@ -584,8 +540,7 @@ export default function App() {
                 generation25DData={generation25DData}
                 refinementData={refinementData}
                 refinedPreviewUrl={refinedPreviewUrl}
-                refinementSource={refinementSource}
-                apiBase={apiBase}
+                apiBase={API_BASE}
               />
             </div>
           </div>

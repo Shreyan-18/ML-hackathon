@@ -12,7 +12,6 @@ export default function VisionAnalysisCard({
   apiBase = '',
 }) {
   const [copied, setCopied] = useState(false);
-  const [conceptView, setConceptView] = useState('auto'); // 'svg' or 'render'
 
   const handleCopyPrompt = () => {
     if (!analysisData?.reconstruction_prompt) return;
@@ -47,7 +46,7 @@ export default function VisionAnalysisCard({
 
         <div className="flex items-center gap-2">
           <span className="text-[11px] px-2.5 py-1 bg-[#111416] border border-[#272a2d] text-[#6ffbbe] rounded-md font-mono">
-            {analysisData?.inference_backend || 'Gemini 3.5 Flash Vision'}
+            {analysisData?.inference_backend || 'Llama 3.2 Vision 11B'}
           </span>
         </div>
       </div>
@@ -99,37 +98,26 @@ export default function VisionAnalysisCard({
               <span className="material-symbols-outlined text-xs">auto_fix_high</span>
               <span>AI Refined Sketch (InstantMesh Ready)</span>
             </span>
-            <div className="flex items-center gap-1.5">
-              {refinementData.source_used && (
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                  refinementData.source_used === 'isolated'
-                    ? 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
-                    : 'bg-[#FF7F50]/20 text-[#FF7F50] border-[#FF7F50]/40'
-                }`}>
-                  {refinementData.source_used === 'isolated' ? '✂️ Isolated Subject' : '✏️ Real Sketch'}
-                </span>
-              )}
-              <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                  refinementData.is_fallback
-                    ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
-                    : 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
-                }`}
-              >
-                {refinementData.is_fallback ? 'Fallback Activated' : 'Quality Validated'}
-              </span>
-            </div>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                refinementData.is_fallback
+                  ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
+                  : 'bg-[#00f59b]/20 text-[#00f59b] border-[#00f59b]/40'
+              }`}
+            >
+              {refinementData.is_fallback ? 'Fallback Activated' : 'Quality Validated'}
+            </span>
           </div>
 
-          <div className="flex items-center gap-3 bg-[#191c1e] p-2 rounded-lg border border-[#272a2d]">
-            <div className="h-24 w-24 bg-white rounded p-1 flex items-center justify-center overflow-hidden shrink-0">
+          <div className="flex flex-col gap-2.5 bg-[#191c1e] p-2.5 rounded-lg border border-[#272a2d]">
+            <div className="w-full h-32 bg-white rounded p-1.5 flex items-center justify-center overflow-hidden">
               <img
                 src={`${apiBase}/static/refinement/${refinementData.effective_image_path.split(/[/\\]/).pop()}`}
                 alt="Refined effective"
                 className="max-h-full max-w-full object-contain"
               />
             </div>
-            <div className="text-[11px] space-y-1 flex-1">
+            <div className="text-[11px] space-y-1.5 w-full">
               <div className="flex justify-between border-b border-[#272a2d] pb-1">
                 <span className="text-[#849588]">Edge Contour Retention:</span>
                 <span className="font-semibold text-white">
@@ -140,18 +128,6 @@ export default function VisionAnalysisCard({
                 <span className="text-[#849588]">Silhouette IoU:</span>
                 <span className="font-semibold text-white">
                   {(refinementData.validation.silhouette_iou * 100).toFixed(0)}%
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-[#272a2d] pb-1">
-                <span className="text-[#849588]">Scale Retention:</span>
-                <span className="font-semibold text-[#00f59b]">
-                  {((refinementData.validation.scale_ratio ?? 1.0) * 100).toFixed(0)}%
-                </span>
-              </div>
-              <div className="flex justify-between border-b border-[#272a2d] pb-1">
-                <span className="text-[#849588]">Stroke Contrast:</span>
-                <span className="font-semibold text-white">
-                  {(refinementData.validation.contrast_ratio * 100).toFixed(0)}%
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#272a2d] pb-1">
@@ -241,78 +217,18 @@ export default function VisionAnalysisCard({
         </div>
       )}
 
-      {/* 2.5D Volumetric Geometry & Gemini Concept Card */}
+      {/* 2.5D Volumetric Geometry Card (Depth Map & Surface Normals) */}
       {generation25DData && (
         <div className="p-3.5 rounded-xl bg-[#0c0f11]/80 border border-[#7bd0ff]/40 shadow-inner">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold text-[#7bd0ff] uppercase tracking-wider flex items-center gap-1">
               <span className="material-symbols-outlined text-xs">layers</span>
-              <span>2.5D Volumetric Geometry & Concept</span>
+              <span>2.5D Volumetric Geometry</span>
             </span>
-            <span className="text-[10px] text-[#7bd0ff] font-mono px-2 py-0.5 rounded-full bg-[#7bd0ff]/10 border border-[#7bd0ff]/30">
-              {generation25DData.gemini_backend || 'Gemini Key 2 Studio'}
+            <span className="text-[10px] text-[#00f59b] font-mono">
+              Watertight 3D Relief Generated
             </span>
           </div>
-
-          {/* Gemini Volumetric Concept Render Preview */}
-          {(generation25DData.concept_render_path || generation25DData.concept_svg_path) && (
-            <div className="mb-3 bg-[#191c1e] p-2.5 rounded-lg border border-[#7bd0ff]/30">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[#a0c5dc] text-[11px] font-semibold flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs text-[#7bd0ff]">auto_awesome</span>
-                  <span>AI Refined 2.5D Concept</span>
-                </span>
-                
-                {generation25DData.concept_svg_path && generation25DData.concept_render_path && (
-                  <div className="flex items-center gap-1 bg-[#111416] p-0.5 rounded-md border border-[#272a2d]">
-                    <button
-                      type="button"
-                      onClick={() => setConceptView('svg')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                        (conceptView === 'svg' || conceptView === 'auto')
-                          ? 'bg-[#7bd0ff]/20 text-[#7bd0ff] font-semibold'
-                          : 'text-[#849588] hover:text-white'
-                      }`}
-                    >
-                      Vector Concept (SVG)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConceptView('render')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                        conceptView === 'render'
-                          ? 'bg-[#7bd0ff]/20 text-[#7bd0ff] font-semibold'
-                          : 'text-[#849588] hover:text-white'
-                      }`}
-                    >
-                      3D Studio Shaded
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="h-48 flex items-center justify-center bg-black/40 rounded p-1 overflow-hidden">
-                {((conceptView === 'svg' || conceptView === 'auto') && generation25DData.concept_svg_path) ? (
-                  <img
-                    src={`${apiBase}/static/generation25d/${generation25DData.concept_svg_path.split(/[/\\]/).pop()}`}
-                    alt="2.5D Vector Concept"
-                    className="max-h-full max-w-full object-contain"
-                  />
-                ) : (
-                  <img
-                    src={`${apiBase}/static/generation25d/${generation25DData.concept_render_path.split(/[/\\]/).pop()}`}
-                    alt="2.5D Volumetric Studio Render"
-                    className="max-h-full max-w-full object-contain"
-                  />
-                )}
-              </div>
-              {generation25DData.prompt_used && (
-                <p className="mt-1.5 text-[10px] text-[#849588] italic line-clamp-2">
-                  "{generation25DData.prompt_used}"
-                </p>
-              )}
-            </div>
-          )}
 
           <div className="grid grid-cols-2 gap-3 text-center text-xs">
             {/* Depth Map */}

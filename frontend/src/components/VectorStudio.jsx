@@ -39,11 +39,6 @@ export default function VectorStudio({
   refinedPreviewUrl = null,
   refinementUserPrompt = '',
   setRefinementUserPrompt,
-  refinementSource = 'isolated',
-  onSelectRefinementSource,
-  // 2.5D Concept Generation Props (Gemini Key 2)
-  conceptPrompt = 'Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.',
-  setConceptPrompt,
 }) {
   const [activeTab, setActiveTab] = useState('sketch'); // 'sketch' or 'upload'
   const [brushColor, setBrushColor] = useState('#FF7F50');
@@ -52,59 +47,156 @@ export default function VectorStudio({
   const [targetQuality, setTargetQuality] = useState('mid'); // 'low', 'mid', 'ultra'
   const [isDrawing, setIsDrawing] = useState(false);
   const [history, setHistory] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
   const [previewMode, setPreviewMode] = useState('refined'); // 'refined', 'isolated', 'original', 'split'
   const [showPromptInput, setShowPromptInput] = useState(false);
+  const colorInputRef = useRef(null);
 
-  // Available palette matching design
-  const palette = [
-    { name: 'Coral', color: '#FF7F50' },
+  // MS Paint Style Palette (2 Rows of 10 classic colors)
+  const paintPaletteRow1 = [
+    { name: 'Black', color: '#000000' },
+    { name: 'Slate Gray', color: '#7f7f7f' },
+    { name: 'Dark Red', color: '#880015' },
+    { name: 'Red', color: '#ed1c24' },
+    { name: 'Coral Orange', color: '#FF7F50' },
+    { name: 'Gold Yellow', color: '#fff200' },
     { name: 'Neon Mint', color: '#00f59b' },
-    { name: 'Cyan Electric', color: '#7bd0ff' },
-    { name: 'Pure White', color: '#FFFFFF' },
-    { name: 'Carbon Outline', color: '#37393c' },
+    { name: 'Electric Cyan', color: '#00d2ff' },
+    { name: 'Deep Blue', color: '#0078d4' },
+    { name: 'Purple', color: '#8a2be2' },
   ];
 
-  // Save canvas state to history stack for Undo
+  const paintPaletteRow2 = [
+    { name: 'Pure White', color: '#FFFFFF' },
+    { name: 'Light Gray', color: '#bfc9c3' },
+    { name: 'Brown', color: '#8B4513' },
+    { name: 'Rose Pink', color: '#ffaec9' },
+    { name: 'Amber', color: '#ffc90e' },
+    { name: 'Cream', color: '#fffacd' },
+    { name: 'Lime Green', color: '#b5e61d' },
+    { name: 'Sky Blue', color: '#7bd0ff' },
+    { name: 'Steel Blue', color: '#7092be' },
+    { name: 'Lavender', color: '#c8bfe7' },
+  ];
+
+  // Save canvas state to history stack for Undo and reset Redo stack
   const pushHistory = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
       const dataUrl = canvas.toDataURL();
-      setHistory((prev) => [...prev.slice(-15), dataUrl]);
+      setHistory((prev) => [...prev.slice(-30), dataUrl]);
+      setRedoStack([]); // New drawing action invalidates redo stack
     } catch {
       // ignore
     }
   }, [canvasRef]);
 
   // Undo stroke
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (history.length === 0) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const newHistory = [...history];
-    newHistory.pop(); // discard current
-    const previousState = newHistory[newHistory.length - 1];
 
-    if (previousState) {
+    const currentData = canvas.toDataURL();
+    setRedoStack((prev) => [...prev, currentData]);
+
+    const newHistory = [...history];
+    newHistory.pop(); // remove current state
+    setHistory(newHistory);
+
+    if (newHistory.length > 0) {
+      const previousState = newHistory[newHistory.length - 1];
       const img = new Image();
       img.onload = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'user_sketch.png', { type: 'image/png' });
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(blob));
+            if (onResetIsolation) onResetIsolation(true);
+          }
+        });
       };
       img.src = previousState;
-      setHistory(newHistory);
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      setHistory([]);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], 'user_sketch.png', { type: 'image/png' });
+          setSelectedFile(file);
+          setPreviewUrl(URL.createObjectURL(blob));
+          if (onResetIsolation) onResetIsolation(true);
+        }
+      });
     }
-  };
+  }, [canvasRef, history, onResetIsolation, setPreviewUrl, setSelectedFile]);
+
+  // Redo stroke
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const newRedo = [...redoStack];
+    const nextState = newRedo.pop();
+    setRedoStack(newRedo);
+
+    if (nextState) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        setHistory((prev) => [...prev, nextState]);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'user_sketch.png', { type: 'image/png' });
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(blob));
+            if (onResetIsolation) onResetIsolation(true);
+          }
+        });
+      };
+      img.src = nextState;
+    }
+  }, [canvasRef, redoStack, onResetIsolation, setPreviewUrl, setSelectedFile]);
+
+  // Keyboard Shortcuts: Ctrl+Z (Undo), Ctrl+Y / Ctrl+Shift+Z (Redo)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        if (e.shiftKey) {
+          e.preventDefault();
+          handleRedo();
+        } else {
+          e.preventDefault();
+          handleUndo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
 
   // Clear Canvas
   const handleClear = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    try {
+      const currentData = canvas.toDataURL();
+      setRedoStack((prev) => [...prev, currentData]);
+    } catch {
+      // ignore
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHistory([]);
     setSelectedFile(null);
@@ -389,7 +481,7 @@ export default function VectorStudio({
               }`}
             >
               <span className="material-symbols-outlined text-sm">draw</span>
-              <span>Hero Vector Studio</span>
+              <span>Manual Drawing</span>
             </button>
             <button
               onClick={() => setActiveTab('upload')}
@@ -400,162 +492,182 @@ export default function VectorStudio({
               }`}
             >
               <span className="material-symbols-outlined text-sm">upload_file</span>
-              <span>Upload File / Photo</span>
+              <span>Upload File</span>
             </button>
           </div>
 
           <div className="h-5 w-px bg-[#323537]/50 hidden sm:block"></div>
 
-          {/* Isolate Foreground Toggle Switch (Optional, Disabled by default) */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#0c0f11] border border-[#323537]/80 hover:border-[#00f59b]/50 transition-all shadow-inner">
-            <label className="relative inline-flex items-center cursor-pointer select-none">
-              <input
-                type="checkbox"
-                id="isolate-foreground-checkbox"
-                checked={isolateForeground}
-                onChange={(e) => onToggleIsolateForeground && onToggleIsolateForeground(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-8 h-4 bg-[#272a2d] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#00f59b]"></div>
-              <span className="ml-2 text-xs font-semibold text-white flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-sm text-[#00f59b]">content_cut</span>
-                <span>Isolate Foreground</span>
-              </span>
-            </label>
-            <span
-              className="text-[10px] text-[#849588] hidden lg:inline border-l border-[#323537]/60 pl-2"
-              title="Remove the background and isolate the main object."
+          {/* Improved Isolate Foreground Toggle Switch Button */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isolateForeground}
+              onClick={() => onToggleIsolateForeground && onToggleIsolateForeground(!isolateForeground)}
+              className={`relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer select-none ${
+                isolateForeground
+                  ? 'bg-[#00f59b]/15 border-[#00f59b]/70 text-white shadow-[0_0_14px_rgba(0,245,155,0.25)]'
+                  : 'bg-[#141719] border-[#323537] hover:border-[#43474b] text-[#bfc9c3] hover:text-white'
+              }`}
+              title={isolateForeground ? "Remove Foreground: Active (Click to toggle)" : "Remove Foreground: Standby (Click to toggle)"}
             >
-              Remove background & isolate main object
-            </span>
-            {isolationLoading && (
-              <span className="material-symbols-outlined text-xs text-[#00f59b] animate-spin" title="Isolating foreground...">
-                sync
+              {/* Smooth Animated Toggle Switch Track */}
+              <div
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
+                  isolateForeground ? 'bg-[#00f59b]' : 'bg-[#2a2d30]'
+                }`}
+              >
+                <span
+                  style={{
+                    transform: isolateForeground ? 'translateX(16px)' : 'translateX(0px)',
+                  }}
+                  className="inline-block h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out pointer-events-none"
+                />
+              </div>
+
+              <span className="flex items-center gap-1.5 text-xs font-semibold">
+                <span className={`material-symbols-outlined text-sm ${isolateForeground ? 'text-[#00f59b]' : 'text-[#849588]'}`}>
+                  content_cut
+                </span>
+                <span>Remove Foreground</span>
               </span>
-            )}
+
+              {isolationLoading ? (
+                <span className="material-symbols-outlined text-xs text-[#00f59b] animate-spin" title="Isolating foreground...">
+                  sync
+                </span>
+              ) : (
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase transition-colors ${
+                    isolateForeground
+                      ? 'bg-[#00f59b]/25 text-[#00f59b] border border-[#00f59b]/40'
+                      : 'bg-[#272a2d] text-[#849588]'
+                  }`}
+                >
+                  {isolateForeground ? 'ON' : 'OFF'}
+                </span>
+              )}
+            </button>
+
             {isolateForeground && isolationData && (
-              <span className="px-2 py-0.2 rounded-full bg-[#00f59b]/20 text-[#00f59b] text-[10px] font-semibold border border-[#00f59b]/40">
+              <span className="px-2 py-0.5 rounded-full bg-[#00f59b]/20 text-[#00f59b] text-[10px] font-semibold border border-[#00f59b]/40">
                 {selectedInput === 'isolated' ? 'Active' : 'Standby'}
               </span>
             )}
           </div>
 
-          {/* AI Image Refinement Toggle Switch */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#0c0f11] border border-[#323537]/80 hover:border-[#FF7F50]/50 transition-all shadow-inner">
-            <label className="relative inline-flex items-center cursor-pointer select-none">
-              <input
-                type="checkbox"
-                id="refine-sketch-checkbox"
-                checked={refineSketch}
-                onChange={(e) => onToggleRefinement && onToggleRefinement(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-8 h-4 bg-[#272a2d] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-[#FF7F50]"></div>
-              <span className="ml-2 text-xs font-semibold text-white flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-sm text-[#FF7F50]">auto_fix_high</span>
+          {/* Improved AI Image Refinement Toggle Switch Button */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={refineSketch}
+              onClick={() => onToggleRefinement && onToggleRefinement(!refineSketch)}
+              className={`relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer select-none ${
+                refineSketch
+                  ? 'bg-[#FF7F50]/15 border-[#FF7F50]/70 text-white shadow-[0_0_14px_rgba(255,127,80,0.25)]'
+                  : 'bg-[#141719] border-[#323537] hover:border-[#43474b] text-[#bfc9c3] hover:text-white'
+              }`}
+              title={refineSketch ? "AI Refine: Active (Click to toggle)" : "AI Refine: Standby (Click to toggle)"}
+            >
+              {/* Smooth Animated Toggle Switch Track */}
+              <div
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
+                  refineSketch ? 'bg-[#FF7F50]' : 'bg-[#2a2d30]'
+                }`}
+              >
+                <span
+                  style={{
+                    transform: refineSketch ? 'translateX(16px)' : 'translateX(0px)',
+                  }}
+                  className="inline-block h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out pointer-events-none"
+                />
+              </div>
+
+              <span className="flex items-center gap-1.5 text-xs font-semibold">
+                <span className={`material-symbols-outlined text-sm ${refineSketch ? 'text-[#FF7F50]' : 'text-[#849588]'}`}>
+                  auto_fix_high
+                </span>
                 <span>AI Refine</span>
               </span>
-            </label>
-            <span
-              className="text-[10px] text-[#849588] hidden 2xl:inline border-l border-[#323537]/60 pl-2"
-              title="Enhance line continuity, contrast and structure with quality validation"
-            >
-              Clean contours & enhance contrast
-            </span>
-            {refinementLoading && (
-              <span className="material-symbols-outlined text-xs text-[#FF7F50] animate-spin" title="Synthesizing refined image...">
-                sync
-              </span>
-            )}
+
+              {refinementLoading ? (
+                <span className="material-symbols-outlined text-xs text-[#FF7F50] animate-spin" title="Synthesizing refined image...">
+                  sync
+                </span>
+              ) : (
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase transition-colors ${
+                    refineSketch
+                      ? 'bg-[#FF7F50]/25 text-[#FF7F50] border border-[#FF7F50]/40'
+                      : 'bg-[#272a2d] text-[#849588]'
+                  }`}
+                >
+                  {refineSketch ? 'ON' : 'OFF'}
+                </span>
+              )}
+            </button>
+
             {refineSketch && refinementData && (
-              <span className={`px-2 py-0.2 rounded-full text-[10px] font-semibold border ${
-                refinementData.is_fallback
-                  ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
-                  : 'bg-[#FF7F50]/20 text-[#FF7F50] border-[#FF7F50]/40'
-              }`}>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                  refinementData.is_fallback
+                    ? 'bg-[#93000a]/20 text-[#ffb4ab] border-[#ffb4ab]/30'
+                    : 'bg-[#FF7F50]/20 text-[#FF7F50] border-[#FF7F50]/40'
+                }`}
+              >
                 {refinementData.is_fallback ? 'Fallback' : 'Validated'}
               </span>
             )}
+
             <button
+              type="button"
               onClick={() => setShowPromptInput(!showPromptInput)}
-              className={`p-1 rounded text-xs transition-colors ${
-                showPromptInput ? 'text-[#FF7F50] bg-[#FF7F50]/15' : 'text-[#849588] hover:text-white'
+              className={`p-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
+                showPromptInput
+                  ? 'text-[#FF7F50] bg-[#FF7F50]/20 border-[#FF7F50]/50'
+                  : 'text-[#849588] hover:text-white bg-[#141719] border-[#323537] hover:border-[#43474b]'
               }`}
               title="Configure custom refinement guidance prompt"
             >
-              <span className="material-symbols-outlined text-xs">tune</span>
+              <span className="material-symbols-outlined text-sm">tune</span>
             </button>
           </div>
 
-          {/* Source Selector: Choose between Isolated Foreground vs Real Sketch */}
-          {isolationData && (
-            <div className="flex items-center gap-1 p-1 rounded-full bg-[#0c0f11] border border-[#323537]/80 text-xs shadow-inner">
-              <span className="text-[10px] text-[#849588] font-bold px-1 uppercase tracking-wider hidden sm:inline">Refine Target:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectRefinementSource && onSelectRefinementSource('isolated');
-                  if (refineSketch && onRefineSketch) onRefineSketch(null, 'isolated');
-                }}
-                className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 transition-all ${
-                  refinementSource === 'isolated'
-                    ? 'bg-[#00f59b] text-[#003920] shadow-[0_0_8px_rgba(0,245,155,0.4)]'
-                    : 'text-[#849588] hover:text-white hover:bg-[#1d2022]'
-                }`}
-                title="Refine the background-isolated object"
-              >
-                <span className="material-symbols-outlined text-xs">content_cut</span>
-                <span>Isolated Subject</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectRefinementSource && onSelectRefinementSource('original');
-                  if (refineSketch && onRefineSketch) onRefineSketch(null, 'original');
-                }}
-                className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold flex items-center gap-1 transition-all ${
-                  refinementSource === 'original'
-                    ? 'bg-[#FF7F50] text-white shadow-[0_0_8px_rgba(255,127,80,0.4)]'
-                    : 'text-[#849588] hover:text-white hover:bg-[#1d2022]'
-                }`}
-                title="Refine the raw hand-drawn sketch directly"
-              >
-                <span className="material-symbols-outlined text-xs">draw</span>
-                <span>Real Sketch</span>
-              </button>
-            </div>
-          )}
-
           <div className="h-5 w-px bg-[#323537]/50 hidden md:block"></div>
-
-          {/* Realtime badges */}
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00f59b]/10 border border-[#00f59b]/30 text-[#00f59b] text-[11px] font-semibold">
-              <span className="w-2 h-2 rounded-full bg-[#00f59b] animate-ping"></span>
-              Realtime Neural Trace
-            </span>
-            <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1d2022] text-[#849588] text-[11px] border border-[#272a2d]">
-              <span className="material-symbols-outlined text-xs text-[#FF7F50]">grid_goldenratio</span>
-              <span>2048 x 2048 SDF Grid</span>
-            </span>
-          </div>
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls (Undo, Redo, Clear, Load Demo) */}
         <div className="flex items-center gap-2">
+          {/* Undo Button */}
           <button
+            type="button"
             onClick={handleUndo}
             disabled={history.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1d2022] hover:bg-[#272a2d] disabled:opacity-40 text-white text-xs font-medium transition-colors border border-[#323537]/40"
-            title="Undo Stroke"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1d2022] hover:bg-[#272a2d] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors border border-[#323537]/40 cursor-pointer"
+            title="Undo Stroke (Ctrl+Z)"
           >
             <span className="material-symbols-outlined text-sm text-[#4edea3]">undo</span>
             <span>Undo</span>
           </button>
 
+          {/* Redo Button Beside Undo */}
           <button
+            type="button"
+            onClick={handleRedo}
+            disabled={redoStack.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1d2022] hover:bg-[#272a2d] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors border border-[#323537]/40 cursor-pointer"
+            title="Redo Stroke (Ctrl+Y)"
+          >
+            <span className="material-symbols-outlined text-sm text-[#7bd0ff]">redo</span>
+            <span>Redo</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleClear}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1d2022] hover:bg-[#93000a] text-[#bfc9c3] hover:text-white text-xs font-medium transition-colors border border-[#323537]/40"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1d2022] hover:bg-[#93000a] text-[#bfc9c3] hover:text-white text-xs font-medium transition-colors border border-[#323537]/40 cursor-pointer"
             title="Clear Canvas"
           >
             <span className="material-symbols-outlined text-sm">delete_sweep</span>
@@ -563,8 +675,9 @@ export default function VectorStudio({
           </button>
 
           <button
+            type="button"
             onClick={drawDemoDrone}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#FF7F50]/15 hover:bg-[#FF7F50]/25 text-[#FF7F50] text-xs font-semibold transition-colors border border-[#FF7F50]/40 shadow-[0_0_12px_rgba(255,127,80,0.25)]"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#FF7F50]/15 hover:bg-[#FF7F50]/25 text-[#FF7F50] text-xs font-semibold transition-colors border border-[#FF7F50]/40 shadow-[0_0_12px_rgba(255,127,80,0.25)] cursor-pointer"
             title="Load Sci-Fi Concept Drone Reference"
           >
             <span className="material-symbols-outlined text-sm">auto_stories</span>
@@ -573,166 +686,240 @@ export default function VectorStudio({
         </div>
       </div>
 
-      {/* Drawing Toolbar (Shown in sketch tab) */}
+      {/* Drawing Ribbon Toolbar (MS Paint Style Format) */}
       {activeTab === 'sketch' && (
-        <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-2.5 bg-[#272a2d]/60 border-b border-[#323537]/30 text-xs">
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Color Palette */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-[#849588] uppercase tracking-wider">Palette</span>
-              <div className="flex items-center gap-2 p-1 rounded-lg bg-[#0c0f11]/70 border border-[#323537]/40">
-                {palette.map((p) => {
-                  const isSelected = brushColor === p.color && activeTool !== 'eraser';
-                  return (
-                    <button
-                      key={p.color}
-                      onClick={() => {
-                        setBrushColor(p.color);
-                        if (activeTool === 'eraser') setActiveTool('pen');
-                      }}
-                      className={`w-5 h-5 rounded-full transition-transform ${
-                        isSelected ? 'ring-2 ring-white scale-110' : 'hover:scale-105'
-                      }`}
-                      style={{
-                        backgroundColor: p.color,
-                        boxShadow: isSelected ? `0 0 10px ${p.color}` : 'none',
-                        border: p.color === '#FFFFFF' ? '1px solid #37393c' : 'none',
-                      }}
-                      title={p.name}
+        <div className="flex items-stretch flex-wrap gap-2.5 px-3 py-2 bg-[#121517] border-b border-[#323537]/50 text-xs select-none">
+          {/* Group 1: Tools (Pen, Brush, Eraser) */}
+          <div className="flex flex-col items-center justify-between p-1.5 rounded-xl bg-[#191c1e] border border-[#323537]/60 shadow-inner">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveTool('pen')}
+                className={`p-1.5 rounded-lg flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+                  activeTool === 'pen'
+                    ? 'bg-[#FF7F50] text-white shadow-[0_0_12px_rgba(255,127,80,0.4)]'
+                    : 'text-[#bfc9c3] hover:text-white hover:bg-[#272a2d]'
+                }`}
+                title="Pencil / Vector Pen"
+              >
+                <span className="material-symbols-outlined text-base">edit</span>
+                <span className="text-[9px] font-semibold">Pen</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTool('brush')}
+                className={`p-1.5 rounded-lg flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+                  activeTool === 'brush'
+                    ? 'bg-[#FF7F50] text-white shadow-[0_0_12px_rgba(255,127,80,0.4)]'
+                    : 'text-[#bfc9c3] hover:text-white hover:bg-[#272a2d]'
+                }`}
+                title="SDF Brush"
+              >
+                <span className="material-symbols-outlined text-base">brush</span>
+                <span className="text-[9px] font-semibold">Brush</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTool('eraser')}
+                className={`p-1.5 rounded-lg flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+                  activeTool === 'eraser'
+                    ? 'bg-[#00f59b] text-[#003920] font-bold shadow-[0_0_12px_rgba(0,245,155,0.4)]'
+                    : 'text-[#bfc9c3] hover:text-white hover:bg-[#272a2d]'
+                }`}
+                title="Eraser"
+              >
+                <span className="material-symbols-outlined text-base">ink_eraser</span>
+                <span className="text-[9px] font-semibold">Eraser</span>
+              </button>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#849588] mt-1">Tools</span>
+          </div>
+
+          {/* Group 2: Size & Stroke Width */}
+          <div className="flex flex-col items-center justify-between p-1.5 rounded-xl bg-[#191c1e] border border-[#323537]/60 shadow-inner min-w-[130px]">
+            <div className="flex flex-col justify-center gap-1.5 w-full px-1">
+              {/* Preset Thickness Chips */}
+              <div className="flex items-center justify-center gap-1">
+                {[2, 4, 8, 16].map((sz) => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => setBrushSize(sz)}
+                    className={`w-6 h-6 rounded flex items-center justify-center transition-all cursor-pointer ${
+                      brushSize === sz
+                        ? 'bg-[#FF7F50] text-white shadow-sm ring-1 ring-white/50'
+                        : 'bg-[#121517] hover:bg-[#272a2d] text-[#bfc9c3] border border-[#323537]/50'
+                    }`}
+                    title={`${sz}px Stroke Width`}
+                  >
+                    <span
+                      className="rounded-full bg-current"
+                      style={{ width: `${Math.min(sz, 14)}px`, height: `${Math.min(sz, 14)}px` }}
                     />
-                  );
-                })}
+                  </button>
+                ))}
+              </div>
+              {/* Slider */}
+              <div className="flex items-center justify-center gap-1.5">
+                <input
+                  type="range"
+                  min="1"
+                  max="24"
+                  value={brushSize}
+                  onChange={(e) => setBrushSize(Number(e.target.value))}
+                  className="w-16 h-1 bg-[#323537] rounded-lg cursor-pointer accent-[#FF7F50]"
+                  title={`Stroke: ${brushSize}px`}
+                />
+                <span className="text-[10px] font-bold text-[#FF7F50] font-mono w-7 text-right">{brushSize}px</span>
               </div>
             </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#849588] mt-1">Size</span>
+          </div>
 
-            <div className="h-5 w-px bg-[#323537]/50 hidden sm:block"></div>
+          {/* Group 3: Colors (Iconic MS Paint Palette) */}
+          <div className="flex flex-col items-center justify-between p-1.5 rounded-xl bg-[#191c1e] border border-[#323537]/60 shadow-inner">
+            <div className="flex items-center gap-2.5 px-1">
+              {/* Color 1 & Color 2 Primary Swatches */}
+              <div className="flex items-center gap-1.5">
+                {/* Color 1 (Active) */}
+                <button
+                  type="button"
+                  onClick={() => colorInputRef.current?.click()}
+                  className="flex flex-col items-center gap-0.5 group cursor-pointer"
+                  title="Color 1: Active Drawing Color (Click to customize)"
+                >
+                  <div
+                    className="w-8 h-8 rounded border-2 border-white shadow-[0_0_10px_rgba(255,127,80,0.35)] transition-transform group-hover:scale-105"
+                    style={{ backgroundColor: activeTool === 'eraser' ? '#080a0c' : brushColor }}
+                  />
+                  <span className="text-[9px] font-bold text-white">Color 1</span>
+                </button>
 
-            {/* Tool Selection */}
-            <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[#0c0f11]/70 border border-[#323537]/40">
+                {/* Color 2 (Secondary/Background) */}
+                <div
+                  className="flex flex-col items-center gap-0.5"
+                  title="Color 2: Secondary / Background Color"
+                >
+                  <div className="w-8 h-8 rounded border border-[#323537] bg-white shadow-sm" />
+                  <span className="text-[9px] font-semibold text-[#849588]">Color 2</span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-8 w-px bg-[#323537]/80"></div>
+
+              {/* 2-Row Color Grid (MS Paint Style) */}
+              <div className="flex flex-col gap-1">
+                {/* Row 1 */}
+                <div className="flex items-center gap-1">
+                  {paintPaletteRow1.map((p) => {
+                    const isSelected = brushColor.toLowerCase() === p.color.toLowerCase() && activeTool !== 'eraser';
+                    return (
+                      <button
+                        key={p.color}
+                        type="button"
+                        onClick={() => {
+                          setBrushColor(p.color);
+                          if (activeTool === 'eraser') setActiveTool('pen');
+                        }}
+                        className={`w-4 h-4 rounded-sm border border-[#37393c] transition-all hover:scale-125 cursor-pointer ${
+                          isSelected ? 'ring-2 ring-white scale-110 shadow-[0_0_8px_rgba(255,255,255,0.8)] z-10' : ''
+                        }`}
+                        style={{ backgroundColor: p.color }}
+                        title={p.name}
+                      />
+                    );
+                  })}
+                </div>
+                {/* Row 2 */}
+                <div className="flex items-center gap-1">
+                  {paintPaletteRow2.map((p) => {
+                    const isSelected = brushColor.toLowerCase() === p.color.toLowerCase() && activeTool !== 'eraser';
+                    return (
+                      <button
+                        key={p.color}
+                        type="button"
+                        onClick={() => {
+                          setBrushColor(p.color);
+                          if (activeTool === 'eraser') setActiveTool('pen');
+                        }}
+                        className={`w-4 h-4 rounded-sm border border-[#37393c] transition-all hover:scale-125 cursor-pointer ${
+                          isSelected ? 'ring-2 ring-white scale-110 shadow-[0_0_8px_rgba(255,255,255,0.8)] z-10' : ''
+                        }`}
+                        style={{ backgroundColor: p.color }}
+                        title={p.name}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-8 w-px bg-[#323537]/80"></div>
+
+              {/* Edit Colors Button */}
               <button
-                onClick={() => setActiveTool('pen')}
-                className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all ${
-                  activeTool === 'pen'
-                    ? 'bg-[#FF7F50] text-white shadow-sm'
-                    : 'text-[#bfc9c3] hover:text-white hover:bg-[#1d2022]'
-                }`}
+                type="button"
+                onClick={() => colorInputRef.current?.click()}
+                className="flex flex-col items-center justify-center px-2 py-1 rounded-lg bg-[#121517] hover:bg-[#272a2d] border border-[#323537]/60 text-[#bfc9c3] hover:text-white transition-all cursor-pointer group"
+                title="Edit Colors (Pick any custom color)"
               >
-                <span className="material-symbols-outlined text-sm">edit</span>
-                <span>Vector Pen</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTool('brush')}
-                className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all ${
-                  activeTool === 'brush'
-                    ? 'bg-[#FF7F50] text-white shadow-sm'
-                    : 'text-[#bfc9c3] hover:text-white hover:bg-[#1d2022]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-sm">brush</span>
-                <span>SDF Brush</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTool('eraser')}
-                className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all ${
-                  activeTool === 'eraser'
-                    ? 'bg-[#00f59b] text-[#003920] font-semibold shadow-sm'
-                    : 'text-[#bfc9c3] hover:text-white hover:bg-[#1d2022]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-sm">ink_eraser</span>
-                <span>Eraser</span>
+                <span className="material-symbols-outlined text-base text-[#FF7F50] group-hover:rotate-45 transition-transform">
+                  palette
+                </span>
+                <span className="text-[9px] font-semibold whitespace-nowrap">Edit Colors</span>
+                <input
+                  ref={colorInputRef}
+                  type="color"
+                  value={brushColor}
+                  onChange={(e) => {
+                    setBrushColor(e.target.value);
+                    if (activeTool === 'eraser') setActiveTool('pen');
+                  }}
+                  className="sr-only"
+                />
               </button>
             </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#849588] mt-1">Colors</span>
+          </div>
 
-            <div className="h-5 w-px bg-[#323537]/50 hidden md:block"></div>
-
-            {/* Stroke Width Slider */}
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#FF7F50] text-sm">line_weight</span>
-              <span className="text-[#bfc9c3] text-xs">Stroke</span>
-              <input
-                type="range"
-                min="1"
-                max="24"
-                value={brushSize}
-                onChange={(e) => setBrushSize(Number(e.target.value))}
-                className="w-20 h-1.5 bg-[#323537] rounded-lg cursor-pointer accent-[#FF7F50]"
-              />
-              <span className="text-[#FF7F50] font-semibold w-7">{brushSize}px</span>
-            </div>
-
-            <div className="h-5 w-px bg-[#323537]/50 hidden lg:block"></div>
-
-            {/* Quick Preset Sketches */}
-            <div className="hidden xl:flex items-center gap-1 text-[11px] text-[#849588]">
-              <span>Presets:</span>
+          {/* Group 4: Quick Presets */}
+          <div className="hidden xl:flex flex-col items-center justify-between p-1.5 rounded-xl bg-[#191c1e] border border-[#323537]/60 shadow-inner">
+            <div className="flex items-center gap-1 my-auto">
               {['chair', 'mug', 'car', 'ambiguous'].map((preset) => (
                 <button
                   key={preset}
+                  type="button"
                   onClick={() => loadSampleSketch(preset)}
-                  className={`px-2 py-0.5 rounded capitalize transition-colors ${
+                  className={`px-2 py-1 rounded text-[11px] capitalize transition-colors cursor-pointer ${
                     currentSketchType === preset
-                      ? 'bg-[#FF7F50]/20 text-[#FF7F50] border border-[#FF7F50]/40'
-                      : 'bg-[#1d2022] hover:bg-[#272a2d] text-white border border-[#323537]/30'
+                      ? 'bg-[#FF7F50]/20 text-[#FF7F50] border border-[#FF7F50]/50 font-semibold'
+                      : 'bg-[#121517] hover:bg-[#272a2d] text-[#bfc9c3] hover:text-white border border-[#323537]/40'
                   }`}
+                  title={`Load ${preset} sketch template`}
                 >
                   {preset}
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-1.5 text-[#849588] text-xs">
-            <span className="material-symbols-outlined text-sm text-[#00f59b]">near_me</span>
-            <span>Coordinate Sync: Active</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[#849588] mt-1">Presets</span>
           </div>
         </div>
       )}
 
       {/* Collapsible Refinement Guidance Drawer */}
       {showPromptInput && (
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-[#111416] border-b border-[#323537]/40 text-xs flex-wrap">
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-[#111416] border-b border-[#323537]/40 text-xs">
           <span className="material-symbols-outlined text-sm text-[#FF7F50]">tune</span>
-          {isolationData && (
-            <div className="flex items-center gap-1 bg-[#191c1e] p-1 rounded-lg border border-[#323537]">
-              <span className="text-[#849588] text-[10px] uppercase font-bold px-1">Source:</span>
-              <button
-                type="button"
-                onClick={() => onSelectRefinementSource && onSelectRefinementSource('isolated')}
-                className={`px-2 py-0.5 rounded text-xs font-semibold flex items-center gap-1 transition-all ${
-                  refinementSource === 'isolated'
-                    ? 'bg-[#00f59b] text-[#003920] shadow-sm'
-                    : 'text-[#bfc9c3] hover:text-white'
-                }`}
-                title="Refine the background-isolated foreground object"
-              >
-                <span className="material-symbols-outlined text-xs">content_cut</span>
-                <span>Isolated Subject</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectRefinementSource && onSelectRefinementSource('original')}
-                className={`px-2 py-0.5 rounded text-xs font-semibold flex items-center gap-1 transition-all ${
-                  refinementSource === 'original'
-                    ? 'bg-[#FF7F50] text-white shadow-sm'
-                    : 'text-[#bfc9c3] hover:text-white'
-                }`}
-                title="Refine the raw original sketch"
-              >
-                <span className="material-symbols-outlined text-xs">draw</span>
-                <span>Real Sketch</span>
-              </button>
-            </div>
-          )}
           <span className="text-[#849588] text-[11px] whitespace-nowrap">Refinement Guidance:</span>
           <input
             type="text"
             value={refinementUserPrompt}
             onChange={(e) => setRefinementUserPrompt && setRefinementUserPrompt(e.target.value)}
             placeholder="e.g. sharp chamfered lines, sci-fi metallic chassis, clean minimalist contours..."
-            className="flex-1 bg-[#191c1e] border border-[#323537] rounded-lg px-3 py-1.5 text-white placeholder-[#849588] focus:outline-none focus:border-[#FF7F50] min-w-[200px]"
+            className="flex-1 bg-[#191c1e] border border-[#323537] rounded-lg px-3 py-1.5 text-white placeholder-[#849588] focus:outline-none focus:border-[#FF7F50]"
           />
           <button
             onClick={() => onRefineSketch && onRefineSketch()}
@@ -817,10 +1004,7 @@ export default function VectorStudio({
                 />
                 <div className="absolute bottom-3 left-3 bg-[#0c0f11]/90 backdrop-blur-md px-3 py-1 rounded-md text-[11px] text-[#FF7F50] border border-[#FF7F50]/30 font-mono flex items-center gap-1.5 shadow-lg">
                   <span className="material-symbols-outlined text-xs">auto_fix_high</span>
-                  <span>
-                    AI Refined ({refinementData?.source_used === 'isolated' ? 'Isolated Subject' : 'Real Sketch'}) •{' '}
-                    {refinementData?.is_fallback ? 'Fallback' : 'Validated'}
-                  </span>
+                  <span>AI Refined • {refinementData?.is_fallback ? 'Fallback Used (Structure Protected)' : 'Structure Validated'}</span>
                 </div>
                 {refinementData && (
                   <div className="absolute top-3 right-3 bg-[#0c0f11]/90 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] text-white border border-[#323537] font-mono flex items-center gap-2 shadow-lg">
@@ -1119,82 +1303,10 @@ export default function VectorStudio({
         </div>
       )}
 
-      {/* 2.5D Volumetric Concept Prompt Bar (Gemini Key 2) */}
-      <div className="flex items-center gap-3 px-4 py-2.5 bg-[#0f1418] border-t border-[#7bd0ff]/30 text-xs flex-wrap sm:flex-nowrap">
-        <div className="flex items-center gap-1.5 text-[#7bd0ff] font-semibold whitespace-nowrap">
-          <span className="material-symbols-outlined text-base">auto_awesome</span>
-          <span>2.5D Concept Prompt:</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#7bd0ff]/15 text-[#7bd0ff] border border-[#7bd0ff]/30 font-mono">
-            Gemini Key 2
-          </span>
-        </div>
-        <input
-          type="text"
-          value={conceptPrompt}
-          onChange={(e) => setConceptPrompt && setConceptPrompt(e.target.value)}
-          placeholder="Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth."
-          className="flex-1 min-w-[200px] bg-[#161d22] border border-[#7bd0ff]/30 rounded-lg px-3 py-1.5 text-white placeholder-[#849588] text-xs focus:outline-none focus:border-[#7bd0ff] transition-colors"
-        />
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setConceptPrompt && setConceptPrompt('Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.')}
-            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors"
-            title="Reset to default refined instruction"
-          >
-            Default
-          </button>
-          <button
-            type="button"
-            onClick={() => setConceptPrompt && setConceptPrompt('Refine into a smooth organic stylized 3D concept with lush volumetric gradients and soft ambient shadows.')}
-            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors hidden sm:inline"
-            title="Organic Stylized Preset"
-          >
-            Organic
-          </button>
-          <button
-            type="button"
-            onClick={() => setConceptPrompt && setConceptPrompt('Matte ceramic white clay render with clean smoothed contours, soft ambient occlusion, and studio key-lighting.')}
-            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors hidden sm:inline"
-            title="Studio Clay Preset"
-          >
-            Clay
-          </button>
-          <button
-            type="button"
-            onClick={() => setConceptPrompt && setConceptPrompt('Metallic brushed titanium studio render with sharp specular highlights and rim lighting.')}
-            className="px-2 py-1 rounded bg-[#1e272e] hover:bg-[#28353e] text-[#a0c5dc] text-[10px] border border-[#323537] transition-colors hidden md:inline"
-            title="Titanium Preset"
-          >
-            Titanium
-          </button>
-        </div>
-      </div>
-
       {/* Footer Controls & Generation Actions */}
       <div className="flex items-center justify-between flex-wrap gap-4 p-4 bg-[#272a2d]/40 border-t border-[#323537]/30 text-xs">
-        {/* Left: Preprocessing Badges & Target Quality */}
+        {/* Left: Target Quality & Resolution */}
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-[#849588] uppercase tracking-wider">Preprocessing:</span>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="px-2 py-0.5 rounded bg-[#0c0f11] border border-[#FF7F50]/40 text-[#FF7F50] text-[10px] font-semibold">
-                RMBG Mask
-              </span>
-              <span className="px-2 py-0.5 rounded bg-[#0c0f11] border border-[#00f59b]/40 text-[#00f59b] text-[10px] font-semibold">
-                Sobel Bounds
-              </span>
-              <span className="px-2 py-0.5 rounded bg-[#0c0f11] border border-[#323537]/60 text-[#bfc9c3] text-[10px]">
-                Normals Prior
-              </span>
-              <span className="px-2 py-0.5 rounded bg-[#0c0f11] border border-[#FF7F50]/40 text-[#FF7F50] text-[10px] font-semibold">
-                Watertight SDF
-              </span>
-            </div>
-          </div>
-
-          <div className="h-4 w-px bg-[#323537]/50 hidden md:block"></div>
-
           {/* Target Quality Pills */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-[#849588] uppercase tracking-wider">Target Quality:</span>
@@ -1219,16 +1331,18 @@ export default function VectorStudio({
             </div>
           </div>
 
-          {/* Target Size Selector */}
-          <div className="hidden lg:flex items-center gap-2">
+          <div className="h-4 w-px bg-[#323537]/50 hidden sm:block"></div>
+
+          {/* Target Size / Resolution Selector */}
+          <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-[#849588] uppercase tracking-wider">Resolution:</span>
             <select
               value={targetSize}
               onChange={(e) => setTargetSize(Number(e.target.value))}
-              className="bg-[#1d2022] border border-[#323537] text-white text-xs rounded px-2 py-1 focus:outline-none"
+              className="bg-[#1d2022] border border-[#323537] text-white text-xs font-mono font-medium rounded px-2.5 py-1 focus:outline-none cursor-pointer"
             >
-              <option value={320}>320 x 320 (InstantMesh Native)</option>
-              <option value={512}>512 x 512 (High Resolution)</option>
+              <option value={320}>320*320</option>
+              <option value={512}>512*512</option>
             </select>
           </div>
         </div>

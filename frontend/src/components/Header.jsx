@@ -6,43 +6,19 @@ export default function Header({
   setSearchQuery,
   selectedModel,
   setSelectedModel,
-  apiBase = '',
-  onUpdateApiBase,
 }) {
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const models = [
-    { id: 'flagship', name: 'ZephyrMesh 2.5 Flagship', desc: 'InstantMesh + Gemini Vision' },
-    { id: 'instantmesh', name: 'InstantMesh LRM v1.2', desc: 'Direct 3D Sparse View LRM' },
-    { id: 'gemini', name: 'Gemini 3.5 Flash', desc: 'Multimodal Vision Parser' },
-    { id: 'sdf', name: 'Watertight SDF Hybrid', desc: 'High Precision Marching Tetrahedra' },
-  ];
+   const models = [
+    { id: 'flagship', name: 'ZephyrMesh 2.5 Flagship', desc: 'InstantMesh + Llama 3.2 Vision' },
+     { id: 'instantmesh', name: 'InstantMesh LRM v1.2', desc: 'Direct 3D Sparse View LRM' },
+     { id: 'llama', name: 'Llama 3.2 Vision 11B', desc: 'Semantic Geometry Parser' },
+     { id: 'sdf', name: 'Watertight SDF Hybrid', desc: 'High Precision Marching Tetrahedra' },
+   ];
 
   return (
     <header className="fixed top-0 left-64 right-0 z-40 bg-[#0c0f11]/85 backdrop-blur-xl border-b border-[#272a2d]/60">
-      {/* Hackathon Briefing Notification Banner */}
-      <div className="w-full bg-[#191c1e]/70 px-6 py-1.5 flex items-center justify-between text-xs border-b border-[#272a2d]/30">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#4edea3] text-sm">campaign</span>
-          <span className="text-[#bfc9c3] font-medium">
-            TechZephyr 4.0 Hackathon • AI Sketch-to-3D Reconstruction Engine
-          </span>
-          <span className="hidden md:inline-flex px-1.5 py-0.2 rounded bg-[#00f59b]/15 text-[#00f59b] text-[10px] font-mono border border-[#00f59b]/30">
-            LRM+VLM PIPELINE
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onOpenBriefing}
-            className="text-[#6ffbbe] hover:text-[#00f59b] hover:underline font-semibold text-xs flex items-center gap-1 transition-colors"
-          >
-            <span>Read Briefing</span>
-            <span className="material-symbols-outlined text-xs">arrow_forward</span>
-          </button>
-        </div>
-      </div>
-
       {/* Main Studio Toolbar */}
       <div className="h-16 w-full px-6 flex items-center justify-between gap-4">
         {/* Left: Model Selector & Search */}
@@ -99,35 +75,6 @@ export default function Header({
 
         {/* Right: Feedback, Notifications, User */}
         <div className="flex items-center gap-3">
-          {/* Backend Connection Pill (Local or Colab GPU) */}
-          {apiBase ? (
-            <button
-              onClick={() => {
-                const val = prompt('Enter Backend API URL (leave empty for local :8000):', apiBase);
-                if (val !== null && onUpdateApiBase) onUpdateApiBase(val);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00f59b]/15 hover:bg-[#00f59b]/25 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold transition-all shadow-sm cursor-pointer"
-              title="Colab GPU Backend Active. Click to modify URL."
-            >
-              <span className="w-2 h-2 rounded-full bg-[#00f59b] animate-pulse"></span>
-              <span className="hidden sm:inline">Colab GPU:</span>
-              <span className="font-mono text-[11px] truncate max-w-[130px]">{apiBase.replace(/^https?:\/\//, '')}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                const val = prompt('Enter Colab Public URL (e.g. https://xxxx.ngrok-free.app):', '');
-                if (val && onUpdateApiBase) onUpdateApiBase(val);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1d2022] hover:bg-[#272a2d] border border-[#323537] text-[#bfc9c3] hover:text-white text-xs transition-colors cursor-pointer"
-              title="Click to connect to Colab GPU Tunnel"
-            >
-              <span className="material-symbols-outlined text-xs text-[#FF7F50]">cloud_sync</span>
-              <span className="hidden sm:inline">Connect Colab</span>
-              <span className="sm:hidden">Colab</span>
-            </button>
-          )}
-
           <button
             onClick={() => alert('Feedback submitted! Thank you for testing the Zephyr 3D AI Studio.')}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#272a2d] hover:bg-[#323537] border border-[#3b4a3f]/40 text-white text-xs font-medium transition-colors"
@@ -157,7 +104,7 @@ export default function Header({
                     <p className="text-[11px] text-[#849588] mt-0.5">Ready for fast single-image 3D synthesis.</p>
                   </div>
                   <div className="p-2 rounded-lg bg-[#111416] border border-[#272a2d]">
-                    <p className="font-medium text-white">Gemini Vision VLM Online</p>
+                    <p className="font-medium text-white">Llama 3.2 Vision VLM Online</p>
                     <p className="text-[11px] text-[#849588] mt-0.5">Semantic reasoning and geometry priors active.</p>
                   </div>
                 </div>
