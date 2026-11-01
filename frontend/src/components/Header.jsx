@@ -13,6 +13,7 @@ export default function Header({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const models = [
+    { id: 'hunyuan3d', name: 'Tencent Hunyuan3D-2', desc: 'High-Fidelity 3D Generative Engine' },
     { id: 'flagship', name: 'ZephyrMesh 2.5 Flagship', desc: 'InstantMesh + Gemini Vision' },
     { id: 'instantmesh', name: 'InstantMesh LRM v1.2', desc: 'Direct 3D Sparse View LRM' },
     { id: 'gemini', name: 'Gemini 3.5 Flash', desc: 'Multimodal Vision Parser' },
@@ -20,29 +21,7 @@ export default function Header({
   ];
 
   return (
-    <header className="fixed top-0 left-64 right-0 z-40 bg-[#0c0f11]/85 backdrop-blur-xl border-b border-[#272a2d]/60">
-      {/* Hackathon Briefing Notification Banner */}
-      <div className="w-full bg-[#191c1e]/70 px-6 py-1.5 flex items-center justify-between text-xs border-b border-[#272a2d]/30">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#4edea3] text-sm">campaign</span>
-          <span className="text-[#bfc9c3] font-medium">
-            TechZephyr 4.0 Hackathon • AI Sketch-to-3D Reconstruction Engine
-          </span>
-          <span className="hidden md:inline-flex px-1.5 py-0.2 rounded bg-[#00f59b]/15 text-[#00f59b] text-[10px] font-mono border border-[#00f59b]/30">
-            LRM+VLM PIPELINE
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onOpenBriefing}
-            className="text-[#6ffbbe] hover:text-[#00f59b] hover:underline font-semibold text-xs flex items-center gap-1 transition-colors"
-          >
-            <span>Read Briefing</span>
-            <span className="material-symbols-outlined text-xs">arrow_forward</span>
-          </button>
-        </div>
-      </div>
-
+    <header className="fixed top-0 left-64 right-0 z-40 bg-[#0c0f11]/90 backdrop-blur-xl border-b border-[#272a2d]/60">
       {/* Main Studio Toolbar */}
       <div className="h-16 w-full px-6 flex items-center justify-between gap-4">
         {/* Left: Model Selector & Search */}
@@ -51,11 +30,11 @@ export default function Header({
           <div className="relative">
             <button
               onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#272a2d]/90 hover:bg-[#323537] text-white text-xs font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-[#3b4a3f]/60 transition-all"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#1d2022] hover:bg-[#272a2d] text-white text-xs font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-[#323537] transition-all cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[#4edea3] text-base">neurology</span>
+              <span className="material-symbols-outlined text-[#00f59b] text-base">token</span>
               <span>{selectedModel}</span>
-              <span className="material-symbols-outlined text-[#bfc9c3] text-sm">expand_more</span>
+              <span className="material-symbols-outlined text-[#849588] text-sm">expand_more</span>
             </button>
 
             {modelDropdownOpen && (

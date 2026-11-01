@@ -165,9 +165,11 @@ export default function Viewport3D({
         pod.userData.originalColor = 0x00f59b;
         group.add(pod);
 
-        const blade = new THREE.Mesh(bladeGeo, armMat);
+        const bladeMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8, roughness: 0.2 });
+        const blade = new THREE.Mesh(bladeGeo, bladeMat);
         blade.position.set(x, 0.22, z);
         blade.rotation.y = Math.random() * Math.PI;
+        blade.name = 'propeller';
         group.add(blade);
       });
     } else if (type === 'chair') {
@@ -479,8 +481,15 @@ export default function Viewport3D({
       animFrameRef.current = requestAnimationFrame(animate);
       const delta = clock.getDelta();
 
-      if (turntableActive && group) {
-        group.rotation.y += delta * 0.45;
+      if (group) {
+        if (turntableActive) {
+          group.rotation.y += delta * 0.45;
+        }
+        group.traverse((child) => {
+          if (child.name === 'propeller') {
+            child.rotation.y += delta * 12;
+          }
+        });
       }
 
       controls.update();
@@ -626,40 +635,11 @@ export default function Viewport3D({
             </div>
           )}
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-display font-semibold text-lg text-white">{modelName}</span>
-            {isTrellis ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#76b900]/20 border border-[#76b900]/40 text-[#8ade00] text-xs font-semibold flex items-center gap-1 shadow-sm">
-                <span className="material-symbols-outlined text-xs">neurology</span>
-                NVIDIA NIM TRELLIS (DGX Cloud)
-              </span>
-            ) : isInstantMesh ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#00f59b]/20 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">bolt</span>
-                InstantMesh Cloud GPU
-              </span>
-            ) : reconstructionData ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#FF7F50]/20 border border-[#FF7F50]/40 text-[#FF7F50] text-xs font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">view_in_ar</span>
-                360° Bilateral Volumetric 3D
-              </span>
-            ) : null}
-            <span className="px-2 py-0.5 rounded-full bg-[#00f59b]/20 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold">
-              Watertight Validated
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-[#FF7F50]/20 border border-[#FF7F50]/40 text-[#FF7F50] text-xs font-semibold">
-              {isReliefActive ? '2.5D Relief' : 'PBR Textured'}
+          <div className="flex items-center gap-2">
+            <span className="font-display font-semibold text-lg text-white">
+              {isReliefActive ? '2.5D Volumetric Relief' : '3D Image Reconstruction'}
             </span>
           </div>
-          <span className="text-xs text-[#849588] mt-0.5">
-            {isReliefActive
-              ? `2.5D Watertight Relief Mesh • Max Height: ${generation25DData.mesh_stats?.max_relief_height || 0.35} • Euler: ${generation25DData.mesh_stats?.euler_characteristic || 2}`
-              : isTrellis
-              ? `Synthesized via Microsoft TRELLIS on NVIDIA DGX Cloud with Photorealistic PBR Texturing${reconstructionData?.details?.prompt_used ? ` • "${reconstructionData.details.prompt_used}"` : ''}`
-              : isInstantMesh
-              ? `Synthesized via ${reconstructionData?.details?.architecture || 'InstantMesh ZeroGPU'} with Multi-View Diffusion`
-              : '360° Silhouette-Carved Bilateral Volumetric Mesh • Ready for Game Engines & 3D Print Slicers'}
-          </span>
         </div>
 
         <div className="flex items-center gap-1.5">

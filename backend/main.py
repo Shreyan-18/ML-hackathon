@@ -25,6 +25,7 @@ if _project_root not in sys.path:
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -292,9 +293,11 @@ def api_preprocess_sketch(
 def api_isolate_foreground(
     file: UploadFile = File(..., description="Uploaded sketch image"),
     target_size: int = Query(320, description="Target canvas size"),
-    method: str = Query("auto", description="Extraction method: auto, rembg, or contour"),
+    method: str = Query("auto", description="Extraction method: auto, gemini, rembg, or opencv"),
+    user_prompt: Optional[str] = Query(None, description="Optional user prompt to guide semantic subject detection"),
 ):
     """Isolates the sketch foreground, removes background paper noise, and centers on canvas."""
+    clean_prompt = user_prompt if isinstance(user_prompt, str) else None
     preprocess_res = api_preprocess_sketch(file=file, target_size=target_size)
     processed_path = preprocess_res.processed_image_path
 
@@ -305,6 +308,7 @@ def api_isolate_foreground(
             input_image_path=processed_path,
             target_size=(target_size, target_size),
             config=config,
+            user_prompt=clean_prompt,
         )
     except Exception as err:
         logger.exception("Foreground isolation failed: %s", err)
@@ -340,7 +344,7 @@ def api_generate_25d(
 ):
     """Generates 2.5D Volumetric data: Monocular Depth Map, Normal Map, 3D Relief Mesh, and Gemini Concept Render."""
     # 1. Preprocess & Isolate Foreground
-    iso_res = api_isolate_foreground(file=file, target_size=target_size)
+    iso_res = api_isolate_foreground(file=file, target_size=target_size, user_prompt=prompt)
 
     config = Generation25DConfig(
         export_relief_mesh=export_relief,
@@ -393,10 +397,11 @@ def api_refine_sketch(
         strict_validation=strict_validation,
     )
 
+    clean_prompt = user_prompt if isinstance(user_prompt, str) else None
     try:
         refine_res = refine_sketch_pipeline(
             input_image_path=processed_path,
-            user_prompt=user_prompt,
+            user_prompt=clean_prompt,
             target_size=(target_size, target_size),
             config=config,
             perform_vision_analysis=True,
@@ -450,12 +455,15 @@ def api_full_pipeline(
     file: UploadFile = File(..., description="Uploaded sketch image"),
     target_size: int = Query(320, description="Target resolution"),
     output_format: str = Query("obj", description="3D mesh format (obj, glb)"),
+    user_prompt: Optional[str] = Query(None, description="User injected prompt with highest priority"),
 ):
     """Executes the complete end-to-end hackathon pipeline:
 
     [1] OpenCV Preprocess -> [2] Vision Understanding -> [3] Foreground Isolation ->
     [4] 2.5D Volumetric Generation -> [5] InstantMesh 3D Reconstruction
     """
+    clean_prompt = user_prompt if isinstance(user_prompt, str) else None
+
     # Step 1: Preprocess
     prep_res = api_preprocess_sketch(file=file, target_size=target_size)
 
@@ -465,6 +473,7 @@ def api_full_pipeline(
         analysis_res = analyze_sketch_with_llama_vision(
             image_path=prep_res.processed_image_path,
             config=vision_config,
+            user_prompt=clean_prompt,
         )
     except Exception as err:
         logger.warning("Optional vision analysis failed during full pipeline: %s", err)
@@ -473,17 +482,22 @@ def api_full_pipeline(
     iso_res = isolate_foreground(
         input_image_path=prep_res.processed_image_path,
         target_size=(target_size, target_size),
+        user_prompt=clean_prompt,
     )
 
     # Step 4: 2.5D Volumetric Generation
     gen25d_res = generate_25d(
         image_path=iso_res.composite_path,
         mask_path=iso_res.mask_path,
-        config=Generation25DConfig(export_relief_mesh=True, relief_format=output_format),
+        config=Generation25DConfig(
+            export_relief_mesh=True,
+            relief_format=output_format,
+            prompt=clean_prompt or "Refine and transform this rough sketch into a polished 2.5D volumetric studio concept with smooth contours, rich 3D shading gradients, and solid depth.",
+        ),
     )
 
     # Step 5: 3D Reconstruction
-    refinement_prompt = analysis_res.reconstruction_prompt if analysis_res else None
+    refinement_prompt = clean_prompt or (analysis_res.reconstruction_prompt if analysis_res else None)
     recon_res = reconstruct_3d(
         processed_image_path=iso_res.composite_path,
         output_format=output_format,
@@ -518,8 +532,10 @@ def api_full_pipeline(
 def api_analyze_sketch(
     file: UploadFile = File(..., description="Uploaded sketch image"),
     target_size: int = Query(320, description="Target preprocessing resolution"),
+    user_prompt: Optional[str] = Query(None, description="Optional user prompt to guide semantic understanding"),
 ):
     """Understands and extracts 3D semantic information from a sketch using Llama 3.2 Vision."""
+    clean_prompt = user_prompt if isinstance(user_prompt, str) else None
     preprocess_result = api_preprocess_sketch(
         file=file,
         target_size=target_size,
@@ -531,6 +547,7 @@ def api_analyze_sketch(
         analysis_result = analyze_sketch_with_llama_vision(
             image_path=processed_path,
             config=vision_config,
+            user_prompt=clean_prompt,
         )
     except Exception as err:
         logger.exception("Sketch vision analysis failed: %s", err)
@@ -554,8 +571,10 @@ def api_reconstruct_sketch_to_3d(
     target_size: int = Query(320, description="Target input size for 3D model"),
     output_format: str = Query("obj", description="Output 3D mesh format (obj, glb)"),
     debug: bool = Query(False, description="Save intermediate stages for inspection"),
+    user_prompt: Optional[str] = Query(None, description="User injected prompt with highest priority"),
 ):
     """End-to-end pipeline: Upload -> OpenCV Preprocess -> Llama Vision Understanding -> InstantMesh 3D."""
+    clean_prompt = user_prompt if isinstance(user_prompt, str) else None
     preprocess_result = api_preprocess_sketch(
         file=file,
         target_size=target_size,
@@ -568,11 +587,12 @@ def api_reconstruct_sketch_to_3d(
         analysis_result = analyze_sketch_with_llama_vision(
             image_path=processed_path,
             config=vision_config,
+            user_prompt=clean_prompt,
         )
     except Exception as err:
         logger.warning("Optional vision analysis failed during reconstruction pipeline: %s", err)
 
-    refinement_prompt = analysis_result.reconstruction_prompt if analysis_result else None
+    refinement_prompt = clean_prompt or (analysis_result.reconstruction_prompt if analysis_result else None)
 
     try:
         recon_result = reconstruct_3d(
@@ -603,7 +623,19 @@ def api_reconstruct_sketch_to_3d(
 
 # Mount static frontend SPA at root if built
 if app_config.frontend_dist_dir.exists():
-    app.mount("/", StaticFiles(directory=str(app_config.frontend_dist_dir), html=True), name="frontend")
+    assets_dir = app_config.frontend_dist_dir / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+    @app.get("/{full_path:path}")
+    def serve_frontend_spa(full_path: str):
+        target = app_config.frontend_dist_dir / full_path
+        if target.is_file():
+            return FileResponse(target)
+        index_file = app_config.frontend_dist_dir / "index.html"
+        if index_file.is_file():
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="SPA index.html not found")
 
 
 if __name__ == "__main__":

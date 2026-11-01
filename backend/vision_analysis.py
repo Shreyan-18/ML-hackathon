@@ -156,14 +156,29 @@ def _analyze_with_gemini(
     cfg: LlamaVisionConfig,
     base64_image: str,
     mime_type: str,
+    user_prompt: Optional[str] = None,
 ) -> SketchAnalysisResult:
     """Invokes Google Gemini Vision model using official Generative Language REST API."""
-    prompt = f"{LLAMA_VISION_SYSTEM_PROMPT}\n\n{LLAMA_VISION_USER_PROMPT}"
+    prompt_header = LLAMA_VISION_SYSTEM_PROMPT
+    if isinstance(user_prompt, str) and user_prompt.strip():
+        user_guidance = (
+            f"\n\nCRITICAL USER INTENT & GROUND TRUTH (HIGHEST PRIORITY):\n"
+            f"The user has explicitly specified that this sketch represents: \"{user_prompt.strip()}\".\n"
+            f"You MUST align your semantic classification, object_type, category, visible parts, and reconstruction prompt "
+            f"strictly with this user prompt. Even if visual contours could ambiguously resemble something else "
+            f"(e.g. a cylindrical adapter resembling a badminton shuttlecock or bell), the user's prompt defines "
+            f"the true identity of the object. Interpret all visible strokes, proportions, and primitives in this context."
+        )
+        prompt_header += user_guidance
 
-    models_to_try = [cfg.model]
-    for fallback in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-3.5-flash-lite", "gemini-3.5-flash"]:
-        if fallback and fallback not in models_to_try:
-            models_to_try.append(fallback)
+    prompt = f"{prompt_header}\n\n{LLAMA_VISION_USER_PROMPT}"
+
+    models_to_try = []
+    if cfg.model:
+        models_to_try.append(cfg.model)
+    for candidate in ["gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-3-flash-preview", "gemini-3.5-flash"]:
+        if candidate not in models_to_try:
+            models_to_try.append(candidate)
 
     payload = {
         "contents": [
@@ -221,6 +236,7 @@ def _analyze_with_gemini(
 def analyze_sketch_with_llama_vision(
     image_path: Union[str, Path],
     config: Optional[LlamaVisionConfig] = None,
+    user_prompt: Optional[str] = None,
 ) -> SketchAnalysisResult:
     """Analyzes a sketch using Google Gemini, Llama 3.2 Vision, or local heuristic fallback."""
     cfg = config or LlamaVisionConfig()
@@ -237,7 +253,7 @@ def analyze_sketch_with_llama_vision(
 
     if (not has_api_key and not is_local_ollama) or (is_pytest and not is_mocked_client):
         logger.info("Using OpenCV Heuristic Sketch Analysis engine.")
-        return _heuristic_sketch_analysis(path)
+        return _heuristic_sketch_analysis(path, user_prompt=user_prompt)
 
     try:
         base64_image = encode_image_to_base64(path)
@@ -255,7 +271,7 @@ def analyze_sketch_with_llama_vision(
             is_gemini = getattr(cfg, "provider", "") == "gemini"
 
         if is_gemini:
-            return _analyze_with_gemini(path, cfg, base64_image, mime_type)
+            return _analyze_with_gemini(path, cfg, base64_image, mime_type, user_prompt=user_prompt)
 
         image_data_url = f"data:{mime_type};base64,{base64_image}"
 
@@ -323,7 +339,10 @@ analyze_sketch = analyze_sketch_with_llama_vision
 # Resilient OpenCV Heuristic Analysis Engine
 # ============================================================================
 
-def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
+def _heuristic_sketch_analysis(
+    image_path: Path,
+    user_prompt: Optional[str] = None,
+) -> SketchAnalysisResult:
     """Extracts structural and geometric features using OpenCV contour and geometry metrics."""
     img_bgr = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
     if img_bgr is None:
@@ -508,6 +527,14 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
             "solid watertight manifold mesh, studio lighting on a clean white background."
         )
 
+    if isinstance(user_prompt, str) and user_prompt.strip():
+        obj_type = user_prompt.strip()
+        cat = "user_specified"
+        prompt = (
+            f"A high-fidelity 3D studio model of {obj_type}, clean solid geometry, "
+            f"matching the proportions and contours of the sketch, studio lighting on a pure white background."
+        )
+
     desc = (
         f"Sketch/image depicting a {obj_type} in {view}. "
         f"Observed features include {len(contours)} primary contours occupying "
@@ -519,7 +546,7 @@ def _heuristic_sketch_analysis(image_path: Path) -> SketchAnalysisResult:
         object_type=obj_type,
         category=cat,
         view_type=view,
-        confidence_score=0.88,
+        confidence_score=0.92 if (user_prompt and user_prompt.strip()) else 0.88,
         description=desc,
         visible_parts=parts,
         geometry_features=GeometryFeatures(

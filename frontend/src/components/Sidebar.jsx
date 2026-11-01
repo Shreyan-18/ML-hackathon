@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Sidebar({ activeNav, setActiveNav, onUpgradeSparks }) {
+export default function Sidebar({ activeNav, setActiveNav, onUpgradeSparks, onGoLanding }) {
   const navItems = [
     { id: 'create', label: 'Create', icon: 'auto_fix_high' },
     { id: 'sketch-pad', label: 'Sketch Pad', icon: 'draw' },
@@ -18,7 +18,11 @@ export default function Sidebar({ activeNav, setActiveNav, onUpgradeSparks }) {
     <aside className="fixed left-0 top-0 h-full w-64 bg-[#0c0f11]/95 backdrop-blur-2xl z-50 flex flex-col justify-between p-4 border-r border-[#272a2d]/50 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
       <div className="flex flex-col gap-6">
         {/* Brand Logo */}
-        <div className="flex items-center gap-3 px-1 cursor-pointer" onClick={() => setActiveNav('create')}>
+        <div
+          className="flex items-center gap-3 px-1 cursor-pointer group"
+          onClick={onGoLanding || (() => setActiveNav('create'))}
+          title="Return to Landing Page"
+        >
           <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#272a2d] to-[#0c0f11] border border-[#FF7F50]/40 shadow-[0_0_16px_rgba(255,127,80,0.35)]">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 32 32">
               <polygon className="opacity-80" fill="none" points="16,2 29,9 29,23 16,30 3,23 3,9" stroke="#FF7F50" strokeWidth="1.8" />
@@ -52,7 +56,13 @@ export default function Sidebar({ activeNav, setActiveNav, onUpgradeSparks }) {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveNav(item.id)}
+                onClick={() => {
+                  if (item.isLanding && onGoLanding) {
+                    onGoLanding();
+                  } else {
+                    setActiveNav(item.id);
+                  }
+                }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
                   isActive
                     ? 'bg-[#272a2d] text-[#6ffbbe] shadow-[inset_0_0_12px_rgba(0,245,155,0.15)] relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#00f59b] before:rounded-full'
@@ -74,7 +84,13 @@ export default function Sidebar({ activeNav, setActiveNav, onUpgradeSparks }) {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveNav(item.id)}
+                onClick={() => {
+                  if (item.isLanding && onGoLanding) {
+                    onGoLanding();
+                  } else {
+                    setActiveNav(item.id);
+                  }
+                }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
                   isActive
                     ? 'bg-[#272a2d] text-[#6ffbbe] shadow-[inset_0_0_12px_rgba(0,245,155,0.15)] relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#00f59b] before:rounded-full'
