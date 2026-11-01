@@ -382,6 +382,35 @@ export default function Viewport3D({
           group.clear();
           centerAndScaleMesh(obj, 2.2);
           obj.traverse((child) => configureLoadedMeshMaterial(child, 0x7bd0ff));
+
+          if (generation25DData?.concept_render_path) {
+            const renderFilename = generation25DData.concept_render_path.split(/[/\\]/).pop();
+            const textureUrl = `${apiBase}/static/generation25d/${renderFilename}`;
+            const texLoader = new THREE.TextureLoader();
+            texLoader.load(
+              textureUrl,
+              (tex) => {
+                tex.colorSpace = THREE.SRGBColorSpace;
+                obj.traverse((child) => {
+                  if (child.isMesh) {
+                    child.material = new THREE.MeshStandardMaterial({
+                      map: tex,
+                      roughness: 0.35,
+                      metalness: 0.15,
+                      side: THREE.DoubleSide,
+                    });
+                    child.userData.originalMaterial = child.material;
+                  }
+                });
+                applyShadingMode(shadingMode);
+              },
+              undefined,
+              () => {
+                applyShadingMode(shadingMode);
+              }
+            );
+          }
+
           group.add(obj);
           applyShadingMode(shadingMode);
         },

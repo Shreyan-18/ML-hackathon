@@ -1,7 +1,7 @@
 # Graph Report - ML-hackathon  (2026-11-01)
 
 ## Corpus Check
-- 37 files · ~143,916 words
+- 37 files · ~143,622 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .css 1, .ipynb 1)
 

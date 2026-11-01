@@ -71,7 +71,21 @@ def test_export_relief_3d_mesh_watertight(test_dir: Path):
     # Verify OBJ lines format
     content = out_obj.read_text(encoding="utf-8")
     assert "v " in content
+    assert "vt " in content
     assert "f " in content
+
+    # Verify top face normal points in +Z towards camera & lights
+    lines = content.splitlines()
+    v_lines = [l for l in lines if l.startswith("v ")]
+    f_lines = [l for l in lines if l.startswith("f ")]
+    first_face = f_lines[0].split()[1:]
+    v_indices = [int(p.split("/")[0]) - 1 for p in first_face]
+    verts = [list(map(float, v_lines[idx].split()[1:])) for idx in v_indices]
+    e1 = np.array(verts[1]) - np.array(verts[0])
+    e2 = np.array(verts[2]) - np.array(verts[0])
+    norm = np.cross(e1, e2)
+    norm = norm / np.linalg.norm(norm)
+    assert norm[2] > 0.9, f"Expected top surface normal in +Z, got {norm}"
 
 
 def test_generate_25d_end_to_end(black_on_white_sketch: Path, test_dir: Path):

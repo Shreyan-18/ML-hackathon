@@ -1309,7 +1309,7 @@
       "file_type": "code",
       "norm_label": "generate_25d()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L583"
+      "source_location": "L594"
     },
     {
       "id": "backend_generation_25d_get_solid_sketch_silhouette",
@@ -1333,7 +1333,7 @@
       "file_type": "code",
       "norm_label": "_infer_dominant_sketch_color()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L365"
+      "source_location": "L376"
     },
     {
       "id": "backend_generation_25d_render_studio_shading",
@@ -1345,7 +1345,7 @@
       "file_type": "code",
       "norm_label": "_render_studio_shading()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L382"
+      "source_location": "L393"
     },
     {
       "id": "backend_generation_25d_synthesize_gemini_volumetric_concept",
@@ -1357,7 +1357,7 @@
       "file_type": "code",
       "norm_label": "synthesize_gemini_volumetric_concept()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L455"
+      "source_location": "L466"
     },
     {
       "id": "tests_test_generation_25d_test_compute_surface_normals_encoding",
@@ -1405,7 +1405,7 @@
       "file_type": "code",
       "norm_label": "test_generate_25d_end_to_end()",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L77"
+      "source_location": "L91"
     },
     {
       "id": "tests_test_generation_25d_test_synthesize_gemini_volumetric_concept_fallback",
@@ -1417,7 +1417,7 @@
       "file_type": "code",
       "norm_label": "test_synthesize_gemini_volumetric_concept_fallback()",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L107"
+      "source_location": "L121"
     },
     {
       "id": "tests_test_prompt_priority_and_studio_refinement_synthetic_adapter_sketch",
@@ -3726,7 +3726,7 @@
       "source_location": "L242"
     },
     {
-      "id": "backend_generation_25d_rationale_366",
+      "id": "backend_generation_25d_rationale_377",
       "label": "Extracts a vibrant studio base color from colored sketch strokes, or warm\u2026",
       "_origin": "ast",
       "community": 2,
@@ -3734,18 +3734,7 @@
       "file_type": "rationale",
       "norm_label": "extracts a vibrant studio base color from colored sketch strokes, or warm...",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L366"
-    },
-    {
-      "id": "backend_generation_25d_rationale_390",
-      "label": "Renders a volumetric studio shaded concept image from depth and normals.",
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "generate_25d",
-      "file_type": "rationale",
-      "norm_label": "renders a volumetric studio shaded concept image from depth and normals.",
-      "source_file": "backend/generation_25d.py",
-      "source_location": "L390"
+      "source_location": "L377"
     },
     {
       "id": "backend_generation_25d_rationale_40",
@@ -3759,7 +3748,18 @@
       "source_location": "L40"
     },
     {
-      "id": "backend_generation_25d_rationale_465",
+      "id": "backend_generation_25d_rationale_401",
+      "label": "Renders a volumetric studio shaded concept image from depth and normals.",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "renders a volumetric studio shaded concept image from depth and normals.",
+      "source_file": "backend/generation_25d.py",
+      "source_location": "L401"
+    },
+    {
+      "id": "backend_generation_25d_rationale_476",
       "label": "Generates a 2.5D volumetric studio concept render and SVG using Gemini (Key 2).",
       "_origin": "ast",
       "community": 2,
@@ -3767,7 +3767,7 @@
       "file_type": "rationale",
       "norm_label": "generates a 2.5d volumetric studio concept render and svg using gemini (key 2).",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L465"
+      "source_location": "L476"
     },
     {
       "id": "backend_generation_25d_rationale_57",
@@ -3781,7 +3781,7 @@
       "source_location": "L57"
     },
     {
-      "id": "backend_generation_25d_rationale_589",
+      "id": "backend_generation_25d_rationale_600",
       "label": "Executes the full 2.5D volumetric generation pipeline.",
       "_origin": "ast",
       "community": 2,
@@ -3789,7 +3789,7 @@
       "file_type": "rationale",
       "norm_label": "executes the full 2.5d volumetric generation pipeline.",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L589"
+      "source_location": "L600"
     },
     {
       "id": "tests_test_generation_25d_rationale_1",
@@ -3803,7 +3803,7 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_generation_25d_rationale_108",
+      "id": "tests_test_generation_25d_rationale_122",
       "label": "Verify volumetric studio concept synthesis functions correctly with fallback.",
       "_origin": "ast",
       "community": 2,
@@ -3811,7 +3811,7 @@
       "file_type": "rationale",
       "norm_label": "verify volumetric studio concept synthesis functions correctly with fallback.",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L108"
+      "source_location": "L122"
     },
     {
       "id": "tests_test_generation_25d_rationale_17",
@@ -3847,7 +3847,7 @@
       "source_location": "L52"
     },
     {
-      "id": "tests_test_generation_25d_rationale_78",
+      "id": "tests_test_generation_25d_rationale_92",
       "label": "Verify full 2.5D pipeline from input image to depth, normal, and mesh artifacts.",
       "_origin": "ast",
       "community": 2,
@@ -3855,7 +3855,7 @@
       "file_type": "rationale",
       "norm_label": "verify full 2.5d pipeline from input image to depth, normal, and mesh artifacts.",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L78"
+      "source_location": "L92"
     },
     {
       "id": "tests_test_prompt_priority_and_studio_refinement",
@@ -6752,7 +6752,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L590",
+      "source_location": "L601",
       "weight": 1.0
     },
     {
@@ -6764,7 +6764,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L598",
+      "source_location": "L609",
       "weight": 1.0
     },
     {
@@ -6776,7 +6776,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L599",
+      "source_location": "L610",
       "weight": 1.0
     },
     {
@@ -6788,7 +6788,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L605",
+      "source_location": "L616",
       "weight": 1.0
     },
     {
@@ -6800,7 +6800,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L608",
+      "source_location": "L619",
       "weight": 1.0
     },
     {
@@ -6812,7 +6812,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L617",
+      "source_location": "L628",
       "weight": 1.0
     },
     {
@@ -6824,7 +6824,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L637",
+      "source_location": "L648",
       "weight": 1.0
     },
     {
@@ -6836,7 +6836,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L653",
+      "source_location": "L664",
       "weight": 1.0
     },
     {
@@ -6848,7 +6848,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L680",
+      "source_location": "L691",
       "weight": 1.0
     },
     {
@@ -6860,7 +6860,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L400",
+      "source_location": "L411",
       "weight": 1.0
     },
     {
@@ -6872,7 +6872,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L403",
+      "source_location": "L414",
       "weight": 1.0
     },
     {
@@ -6884,7 +6884,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L478",
+      "source_location": "L489",
       "weight": 1.0
     },
     {
@@ -6896,7 +6896,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L567",
+      "source_location": "L578",
       "weight": 1.0
     },
     {
@@ -8348,7 +8348,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L80",
+      "source_location": "L94",
       "weight": 1.0
     },
     {
@@ -8360,7 +8360,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L82",
+      "source_location": "L96",
       "weight": 1.0
     },
     {
@@ -8372,7 +8372,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L114",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -9584,7 +9584,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L583",
+      "source_location": "L594",
       "weight": 1.0
     },
     {
@@ -9596,7 +9596,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L382",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -9608,7 +9608,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L455",
+      "source_location": "L466",
       "weight": 1.0
     },
     {
@@ -9620,7 +9620,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L455",
+      "source_location": "L466",
       "weight": 1.0
     },
     {
@@ -11552,7 +11552,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L109",
+      "source_location": "L123",
       "weight": 1.0
     },
     {
@@ -13736,7 +13736,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L365",
+      "source_location": "L376",
       "weight": 1.0
     },
     {
@@ -14120,7 +14120,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L77",
+      "source_location": "L91",
       "weight": 1.0
     },
     {
@@ -14132,7 +14132,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L107",
+      "source_location": "L121",
       "weight": 1.0
     },
     {
@@ -14600,7 +14600,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L382",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -15234,18 +15234,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L365",
-      "weight": 1.0
-    },
-    {
-      "source": "backend_generation_25d",
-      "target": "backend_generation_25d_render_studio_shading",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "backend/generation_25d.py",
-      "source_location": "L382",
+      "source_location": "L376",
       "weight": 1.0
     },
     {
@@ -15261,13 +15250,24 @@
     },
     {
       "source": "backend_generation_25d",
+      "target": "backend_generation_25d_render_studio_shading",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/generation_25d.py",
+      "source_location": "L393",
+      "weight": 1.0
+    },
+    {
+      "source": "backend_generation_25d",
       "target": "backend_generation_25d_synthesize_gemini_volumetric_concept",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L455",
+      "source_location": "L466",
       "weight": 1.0
     },
     {
@@ -15289,7 +15289,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L583",
+      "source_location": "L594",
       "weight": 1.0
     },
     {
@@ -16664,7 +16664,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L107",
+      "source_location": "L121",
       "weight": 1.0
     },
     {
@@ -16708,7 +16708,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L77",
+      "source_location": "L91",
       "weight": 1.0
     },
     {
@@ -17790,25 +17790,14 @@
       "weight": 1.0
     },
     {
-      "source": "backend_generation_25d_rationale_366",
+      "source": "backend_generation_25d_rationale_377",
       "target": "backend_generation_25d_infer_dominant_sketch_color",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L366",
-      "weight": 1.0
-    },
-    {
-      "source": "backend_generation_25d_rationale_390",
-      "target": "backend_generation_25d_render_studio_shading",
-      "relation": "rationale_for",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "backend/generation_25d.py",
-      "source_location": "L390",
+      "source_location": "L377",
       "weight": 1.0
     },
     {
@@ -17823,14 +17812,25 @@
       "weight": 1.0
     },
     {
-      "source": "backend_generation_25d_rationale_465",
+      "source": "backend_generation_25d_rationale_401",
+      "target": "backend_generation_25d_render_studio_shading",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/generation_25d.py",
+      "source_location": "L401",
+      "weight": 1.0
+    },
+    {
+      "source": "backend_generation_25d_rationale_476",
       "target": "backend_generation_25d_synthesize_gemini_volumetric_concept",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L465",
+      "source_location": "L476",
       "weight": 1.0
     },
     {
@@ -17845,14 +17845,14 @@
       "weight": 1.0
     },
     {
-      "source": "backend_generation_25d_rationale_589",
+      "source": "backend_generation_25d_rationale_600",
       "target": "backend_generation_25d_generate_25d",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L589",
+      "source_location": "L600",
       "weight": 1.0
     },
     {
@@ -18824,14 +18824,14 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_generation_25d_rationale_108",
+      "source": "tests_test_generation_25d_rationale_122",
       "target": "tests_test_generation_25d_test_synthesize_gemini_volumetric_concept_fallback",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L108",
+      "source_location": "L122",
       "weight": 1.0
     },
     {
@@ -18868,14 +18868,14 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_generation_25d_rationale_78",
+      "source": "tests_test_generation_25d_rationale_92",
       "target": "tests_test_generation_25d_test_generate_25d_end_to_end",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L78",
+      "source_location": "L92",
       "weight": 1.0
     },
     {
@@ -20205,5 +20205,5 @@
       "source_file": "stitch_sketch_to_3d_generator/DESIGN.md"
     }
   ],
-  "built_at_commit": "2b9134dd23d30eefdd86bdcf5e02727c295aba7a"
+  "built_at_commit": "04c8b06182aa73985d5633a134f569c1e255866b"
 }

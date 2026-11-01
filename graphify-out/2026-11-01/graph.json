@@ -1633,7 +1633,7 @@
       "file_type": "code",
       "norm_label": "evaluatecolor()",
       "source_file": "frontend/src/components/MobiusStripCanvas.jsx",
-      "source_location": "L94"
+      "source_location": "L95"
     },
     {
       "id": "frontend_src_components_mobiusstripcanvas_mobiusstripcanvas_updatemobiusgeometry",
@@ -1645,7 +1645,7 @@
       "file_type": "code",
       "norm_label": "updatemobiusgeometry()",
       "source_file": "frontend/src/components/MobiusStripCanvas.jsx",
-      "source_location": "L247"
+      "source_location": "L248"
     },
     {
       "id": "frontend_src_components_showcasegallery_showcasegallery",
@@ -6346,6 +6346,18 @@
       "type": "external"
     },
     {
+      "id": "fastapi_responses",
+      "label": "fastapi_responses",
+      "_origin": "semantic",
+      "community": 18,
+      "community_name": "main.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "fastapi_responses",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "uvicorn",
       "label": "uvicorn",
       "_origin": "semantic",
@@ -6534,17 +6546,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "uuid",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "fastapi_responses",
-      "label": "fastapi_responses",
-      "community": 18,
-      "community_name": "main.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "fastapi_responses",
       "source_file": "",
       "type": "external"
     }
@@ -8251,7 +8252,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "frontend/src/components/MobiusStripCanvas.jsx",
-      "source_location": "L325",
+      "source_location": "L324",
       "weight": 1.0
     },
     {
@@ -8983,7 +8984,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "frontend/src/components/MobiusStripCanvas.jsx",
-      "source_location": "L247",
+      "source_location": "L248",
       "weight": 1.0
     },
     {
@@ -8995,7 +8996,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "frontend/src/components/MobiusStripCanvas.jsx",
-      "source_location": "L94",
+      "source_location": "L95",
       "weight": 1.0
     },
     {

@@ -126,21 +126,21 @@
     "semantic_hash": ""
   },
   "frontend/src/components/VectorStudio.jsx": {
-    "mtime": 1793510502.448659,
-    "seen": 1793510586.89964,
-    "ast_hash": "003e1dcf4456d8bdbfd205cc26a1915c",
+    "mtime": 1793512598.8499277,
+    "seen": 1793512719.1523001,
+    "ast_hash": "555c73520604634ae0bb040ce8a65fb2",
     "semantic_hash": ""
   },
   "frontend/src/components/Viewport3D.jsx": {
-    "mtime": 1793510551.9225962,
-    "seen": 1793510586.899641,
-    "ast_hash": "0bfd163066e7e895174753c1192f6e64",
+    "mtime": 1793512658.468691,
+    "seen": 1793512719.1523001,
+    "ast_hash": "21231ec7601f22196c8dcc16041f9a50",
     "semantic_hash": ""
   },
   "frontend/src/components/VisionAnalysisCard.jsx": {
-    "mtime": 1793481660.1702156,
-    "seen": 1793481825.92667,
-    "ast_hash": "7bab6d5094137543e4606567157ca799",
+    "mtime": 1793512639.4723155,
+    "seen": 1793512719.152301,
+    "ast_hash": "8ace37f722acdec9c955c260b3b07c86",
     "semantic_hash": ""
   },
   "backend/foreground_isolation.py": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "backend/generation_25d.py": {
-    "mtime": 1793477242.1267052,
-    "seen": 1793477277.190022,
-    "ast_hash": "2b94a80d3179a588300794152645bbfc",
+    "mtime": 1793512471.4278243,
+    "seen": 1793512719.152292,
+    "ast_hash": "9a229ecb56c453b3e3ee52dbb9ad797c",
     "semantic_hash": ""
   },
   "tests/test_foreground_isolation.py": {
@@ -162,10 +162,10 @@
     "semantic_hash": "0c266b6a35f967e60b819332752d6c74"
   },
   "tests/test_generation_25d.py": {
-    "mtime": 1793464277.6727476,
-    "seen": 1793476887.184434,
-    "ast_hash": "7ea1f18d7b0b66cb99b2c4209ebd7910",
-    "semantic_hash": "7ea1f18d7b0b66cb99b2c4209ebd7910"
+    "mtime": 1793512696.0695953,
+    "seen": 1793512719.1523042,
+    "ast_hash": "428f31fb8558ddbb3f7adbc12766b9a3",
+    "semantic_hash": ""
   },
   "backend/refinement.py": {
     "mtime": 1793496537.6157374,
@@ -228,9 +228,9 @@
     "semantic_hash": ""
   },
   "frontend/src/StudioApp.jsx": {
-    "mtime": 1793510434.593795,
-    "seen": 1793510586.899636,
-    "ast_hash": "838b42fb1b722574523ae82a9514205d",
+    "mtime": 1793512566.8246486,
+    "seen": 1793512719.152297,
+    "ast_hash": "c6eda02e767073df49200b97d9f7a136",
     "semantic_hash": ""
   },
   "frontend/src/components/LandingPage.jsx": {

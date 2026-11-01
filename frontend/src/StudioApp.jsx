@@ -65,6 +65,7 @@ export default function StudioApp() {
 
   // Async API States
   const [loading, setLoading] = useState(false);
+  const [visionLoading, setVisionLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState(null);
   const [successToast, setSuccessToast] = useState(null);
@@ -76,6 +77,8 @@ export default function StudioApp() {
 
   const canvasRef = useRef(null);
   const galleryRef = useRef(null);
+  const viewportCardRef = useRef(null);
+  const visionCardRef = useRef(null);
 
   // Helper to get file from canvas if none selected
   const getCanvasFile = () => {
@@ -343,6 +346,9 @@ export default function StudioApp() {
       setGeneration25DData(data);
       setActive3DTab('relief25d');
       setSuccessToast('2.5D Volumetric Relief Mesh & Surface Normals Synthesized!');
+      setTimeout(() => {
+        viewportCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (err) {
       console.error(err);
@@ -353,16 +359,16 @@ export default function StudioApp() {
     }
   };
 
-  // Perform Vision Understanding with Llama 3.2 Vision
+  // Perform Vision Understanding with Gemini Vision
   const handleAnalyzeVision = async () => {
     setError(null);
-    setLoading(true);
+    setVisionLoading(true);
     setStatusMessage('Analyzing sketch with Gemini Vision...');
 
     try {
-      let fileToUpload = selectedFile;
+      let fileToUpload = await getActiveFile();
       if (!fileToUpload) {
-        fileToUpload = await getCanvasFile();
+        fileToUpload = selectedFile || (await getCanvasFile());
       }
 
       if (!fileToUpload) {
@@ -387,12 +393,15 @@ export default function StudioApp() {
       setAnalysisData(data.analysis);
       setPreprocessedData(data.processed_image_path);
       setSuccessToast('Sketch analyzed with Gemini Vision!');
+      setTimeout(() => {
+        visionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
       setTimeout(() => setSuccessToast(null), 3000);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Vision analysis failed.');
     } finally {
-      setLoading(false);
+      setVisionLoading(false);
       setStatusMessage('');
     }
   };
@@ -524,6 +533,7 @@ export default function StudioApp() {
             onGenerate25D={handleGenerate25D}
             onAnalyzeVision={handleAnalyzeVision}
             loading={loading}
+            visionLoading={visionLoading}
             generation25DLoading={generation25DLoading}
             statusMessage={statusMessage}
             currentSketchType={currentSketchType}
@@ -568,7 +578,7 @@ export default function StudioApp() {
           {/* Vertical Layout: 3D Image Reconstruction Viewport First, Then Vision Understanding Below */}
           <div className="flex flex-col gap-6 w-full">
             {/* 1. Interactive Three.js 3D Viewport (Full Width) */}
-            <div className="w-full">
+            <div ref={viewportCardRef} className="w-full">
               <Viewport3D
                 reconstructionData={reconstructionData}
                 generation25DData={generation25DData}
@@ -580,9 +590,10 @@ export default function StudioApp() {
             </div>
 
             {/* 2. Llama 3.2 Vision Understanding Analysis & 2.5D Volumetric Geometry (Full Width) */}
-            <div className="w-full">
+            <div ref={visionCardRef} className="w-full">
               <VisionAnalysisCard
                 analysisData={analysisData}
+                visionLoading={visionLoading}
                 preprocessedData={preprocessedData}
                 previewUrl={previewUrl}
                 isolationData={isolationData}

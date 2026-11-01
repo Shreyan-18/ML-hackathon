@@ -5,6 +5,7 @@ export default function VectorStudio({
   onGenerate25D,
   onAnalyzeVision,
   loading,
+  visionLoading = false,
   generation25DLoading = false,
   statusMessage,
   currentSketchType,
@@ -1234,14 +1235,23 @@ export default function VectorStudio({
 
         {/* Right: Primary Generation Buttons */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Llama 3.2 Vision Analysis Button */}
+          {/* Llama 3.2 / Gemini Vision Analysis Button */}
           <button
             onClick={onAnalyzeVision}
-            disabled={loading || generation25DLoading}
+            disabled={loading || generation25DLoading || visionLoading}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#191c1e] hover:bg-[#272a2d] border border-[#00f59b]/40 text-[#6ffbbe] text-xs font-semibold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-base text-[#00f59b]">neurology</span>
-            <span>Vision Analysis</span>
+            {visionLoading ? (
+              <>
+                <span className="material-symbols-outlined text-base animate-spin text-[#00f59b]">refresh</span>
+                <span>Analyzing Vision...</span>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-base text-[#00f59b]">neurology</span>
+                <span>Vision Analysis</span>
+              </>
+            )}
           </button>
 
           {/* Generate 2.5D Relief Button */}
