@@ -25,7 +25,7 @@ export default function StudioApp() {
   };
 
   const [activeNav, setActiveNav] = useState('create');
-  const [selectedModel, setSelectedModel] = useState('Tencent Hunyuan3D-2');
+  const [selectedModel, setSelectedModel] = useState('ZephyrMesh 2.5 Flagship');
   const [searchQuery, setSearchQuery] = useState('');
   const [briefingOpen, setBriefingOpen] = useState(false);
 
@@ -37,16 +37,16 @@ export default function StudioApp() {
   const [debugMode, setDebugMode] = useState(false);
 
   // Foreground Isolation States (Teammate backend integration)
-  const [isolateForeground, setIsolateForeground] = useState(true);
+  const [isolateForeground, setIsolateForeground] = useState(false); // Disabled by default
   const [isolationLoading, setIsolationLoading] = useState(false);
   const [isolationError, setIsolationError] = useState(null);
   const [isolationData, setIsolationData] = useState(null);
   const [isolatedFile, setIsolatedFile] = useState(null);
   const [isolatedPreviewUrl, setIsolatedPreviewUrl] = useState(null);
-  const [selectedInput, setSelectedInput] = useState('refined'); // 'original', 'isolated', or 'refined'
+  const [selectedInput, setSelectedInput] = useState('original'); // 'original', 'isolated', or 'refined'
 
   // AI Sketch Refinement States (Zephyr 3D Refinement Pipeline)
-  const [refineSketch, setRefineSketch] = useState(true);
+  const [refineSketch, setRefineSketch] = useState(false); // Optional, disabled by default
   const [refinementLoading, setRefinementLoading] = useState(false);
   const [refinementError, setRefinementError] = useState(null);
   const [refinementData, setRefinementData] = useState(null);
@@ -65,7 +65,6 @@ export default function StudioApp() {
 
   // Async API States
   const [loading, setLoading] = useState(false);
-  const [visionLoading, setVisionLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState(null);
   const [successToast, setSuccessToast] = useState(null);
@@ -77,8 +76,6 @@ export default function StudioApp() {
 
   const canvasRef = useRef(null);
   const galleryRef = useRef(null);
-  const viewportCardRef = useRef(null);
-  const visionCardRef = useRef(null);
 
   // Helper to get file from canvas if none selected
   const getCanvasFile = () => {
@@ -253,9 +250,8 @@ export default function StudioApp() {
       const formData = new FormData();
       formData.append('file', fileToUpload);
 
-      const promptParam = refinementUserPrompt ? `&user_prompt=${encodeURIComponent(refinementUserPrompt)}` : '';
       const res = await fetch(
-        `${apiBase}/api/foreground-isolate?target_size=${targetSize}&method=auto${promptParam}`,
+        `${apiBase}/api/foreground-isolate?target_size=${targetSize}&method=auto`,
         {
           method: 'POST',
           body: formData,
@@ -346,9 +342,6 @@ export default function StudioApp() {
       setGeneration25DData(data);
       setActive3DTab('relief25d');
       setSuccessToast('2.5D Volumetric Relief Mesh & Surface Normals Synthesized!');
-      setTimeout(() => {
-        viewportCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 150);
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (err) {
       console.error(err);
@@ -359,16 +352,16 @@ export default function StudioApp() {
     }
   };
 
-  // Perform Vision Understanding with Gemini Vision
+  // Perform Vision Understanding with Llama 3.2 Vision
   const handleAnalyzeVision = async () => {
     setError(null);
-    setVisionLoading(true);
+    setLoading(true);
     setStatusMessage('Analyzing sketch with Gemini Vision...');
 
     try {
-      let fileToUpload = await getActiveFile();
+      let fileToUpload = selectedFile;
       if (!fileToUpload) {
-        fileToUpload = selectedFile || (await getCanvasFile());
+        fileToUpload = await getCanvasFile();
       }
 
       if (!fileToUpload) {
@@ -378,8 +371,7 @@ export default function StudioApp() {
       const formData = new FormData();
       formData.append('file', fileToUpload);
 
-      const promptParam = refinementUserPrompt ? `&user_prompt=${encodeURIComponent(refinementUserPrompt)}` : '';
-      const res = await fetch(`${apiBase}/api/analyze-sketch?target_size=${targetSize}${promptParam}`, {
+      const res = await fetch(`${apiBase}/api/analyze-sketch?target_size=${targetSize}`, {
         method: 'POST',
         body: formData,
       });
@@ -393,15 +385,12 @@ export default function StudioApp() {
       setAnalysisData(data.analysis);
       setPreprocessedData(data.processed_image_path);
       setSuccessToast('Sketch analyzed with Gemini Vision!');
-      setTimeout(() => {
-        visionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 200);
       setTimeout(() => setSuccessToast(null), 3000);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Vision analysis failed.');
     } finally {
-      setVisionLoading(false);
+      setLoading(false);
       setStatusMessage('');
     }
   };
@@ -423,9 +412,8 @@ export default function StudioApp() {
 
       setStatusMessage('Synthesizing 6-View Multi-View Diffusion & Reconstructing 3D Mesh...');
 
-      const promptParam = refinementUserPrompt ? `&user_prompt=${encodeURIComponent(refinementUserPrompt)}` : '';
       const res = await fetch(
-        `${apiBase}/api/reconstruct?target_size=${targetSize}&output_format=glb&debug=${debugMode}${promptParam}`,
+        `${apiBase}/api/reconstruct?target_size=${targetSize}&output_format=glb&debug=${debugMode}`,
         {
           method: 'POST',
           body: formData,
@@ -504,7 +492,7 @@ export default function StudioApp() {
       />
 
       {/* Main Studio Viewport */}
-      <main className="pl-64 pt-20 min-h-screen relative z-20">
+      <main className="pl-64 pt-24 min-h-screen relative z-20">
         <div className="max-w-[1480px] mx-auto px-6 py-6 flex flex-col gap-8">
           {/* Toast Notification */}
           {successToast && (
@@ -533,7 +521,6 @@ export default function StudioApp() {
             onGenerate25D={handleGenerate25D}
             onAnalyzeVision={handleAnalyzeVision}
             loading={loading}
-            visionLoading={visionLoading}
             generation25DLoading={generation25DLoading}
             statusMessage={statusMessage}
             currentSketchType={currentSketchType}
@@ -578,7 +565,7 @@ export default function StudioApp() {
           {/* Vertical Layout: 3D Image Reconstruction Viewport First, Then Vision Understanding Below */}
           <div className="flex flex-col gap-6 w-full">
             {/* 1. Interactive Three.js 3D Viewport (Full Width) */}
-            <div ref={viewportCardRef} className="w-full">
+            <div className="w-full">
               <Viewport3D
                 reconstructionData={reconstructionData}
                 generation25DData={generation25DData}
@@ -590,10 +577,9 @@ export default function StudioApp() {
             </div>
 
             {/* 2. Llama 3.2 Vision Understanding Analysis & 2.5D Volumetric Geometry (Full Width) */}
-            <div ref={visionCardRef} className="w-full">
+            <div className="w-full">
               <VisionAnalysisCard
                 analysisData={analysisData}
-                visionLoading={visionLoading}
                 preprocessedData={preprocessedData}
                 previewUrl={previewUrl}
                 isolationData={isolationData}

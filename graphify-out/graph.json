@@ -31,36 +31,22 @@
         "confidence": "EXTRACTED",
         "confidence_score": 1.0,
         "source_file": "README.md"
-      },
-      {
-        "id": "hyperedge_obsidian_synth_design_system",
-        "label": "Obsidian Synth 3D Studio Architecture",
-        "nodes": [
-          "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-          "stitch_sketch_to_3d_generator_code_studio_dashboard",
-          "frontend_index_tailwind_theme_config",
-          "frontend_index_zephyr_3d_app"
-        ],
-        "relation": "implement",
-        "confidence": "INFERRED",
-        "confidence_score": 0.85,
-        "source_file": "stitch_sketch_to_3d_generator/DESIGN.md"
       }
     ]
   },
   "nodes": [
     {
-      "id": "backend_config_foregroundisolationconfig",
-      "label": "ForegroundIsolationConfig",
+      "id": "backend_config_appconfig",
+      "label": "AppConfig",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 0,
       "community_name": "refinement.py",
       "file_type": "code",
-      "norm_label": "foregroundisolationconfig",
+      "norm_label": "appconfig",
       "source_file": "backend/config.py",
-      "source_location": "L139"
+      "source_location": "L256"
     },
     {
       "id": "backend_config_instantmeshconfig",
@@ -89,19 +75,6 @@
       "source_location": "L234"
     },
     {
-      "id": "backend_config_preprocessingconfig",
-      "label": "PreprocessingConfig",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "code",
-      "norm_label": "preprocessingconfig",
-      "source_file": "backend/config.py",
-      "source_location": "L44"
-    },
-    {
       "id": "backend_config_visionconfig",
       "label": "VisionConfig",
       "_callable": true,
@@ -126,6 +99,32 @@
       "norm_label": "foregroundisolationresult",
       "source_file": "backend/foreground_isolation.py",
       "source_location": "L37"
+    },
+    {
+      "id": "backend_refinement_qualityvalidationresult",
+      "label": "QualityValidationResult",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "refinement.py",
+      "file_type": "code",
+      "norm_label": "qualityvalidationresult",
+      "source_file": "backend/refinement.py",
+      "source_location": "L52"
+    },
+    {
+      "id": "backend_config_preprocessingconfig",
+      "label": "PreprocessingConfig",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "code",
+      "norm_label": "preprocessingconfig",
+      "source_file": "backend/config.py",
+      "source_location": "L44"
     },
     {
       "id": "backend_preprocessing_validationresult",
@@ -165,32 +164,6 @@
       "norm_label": "testsketchpreprocessing",
       "source_file": "tests/test_preprocessing.py",
       "source_location": "L31"
-    },
-    {
-      "id": "backend_reconstruction_reconstructionresult",
-      "label": "ReconstructionResult",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "reconstructionresult",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L52"
-    },
-    {
-      "id": "backend_config_appconfig",
-      "label": "AppConfig",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "Application Configuration Settings",
-      "file_type": "code",
-      "norm_label": "appconfig",
-      "source_file": "backend/config.py",
-      "source_location": "L256"
     },
     {
       "id": "backend_refinement_refinementresult",
@@ -336,13 +309,39 @@
       "source_location": "L39"
     },
     {
+      "id": "backend_reconstruction_reconstructionresult",
+      "label": "ReconstructionResult",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "reconstructionresult",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L52"
+    },
+    {
+      "id": "backend_config_foregroundisolationconfig",
+      "label": "ForegroundIsolationConfig",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "isolate_foreground",
+      "file_type": "code",
+      "norm_label": "foregroundisolationconfig",
+      "source_file": "backend/config.py",
+      "source_location": "L139"
+    },
+    {
       "id": "backend_vision_analysis_geometryfeatures",
       "label": "GeometryFeatures",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "geometryfeatures",
       "source_file": "backend/vision_analysis.py",
@@ -355,7 +354,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "visiblepart",
       "source_file": "backend/vision_analysis.py",
@@ -368,7 +367,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "testfastapivisionintegration",
       "source_file": "tests/test_vision.py",
@@ -381,7 +380,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "testllamavisionsketchunderstanding",
       "source_file": "tests/test_vision.py",
@@ -399,19 +398,6 @@
       "norm_label": "refinementconfig",
       "source_file": "backend/config.py",
       "source_location": "L182"
-    },
-    {
-      "id": "backend_refinement_qualityvalidationresult",
-      "label": "QualityValidationResult",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "test_refinement.py",
-      "file_type": "code",
-      "norm_label": "qualityvalidationresult",
-      "source_file": "backend/refinement.py",
-      "source_location": "L52"
     },
     {
       "id": "colab_backend_analysisresponse",
@@ -544,6 +530,18 @@
       "source_location": "L84"
     },
     {
+      "id": "backend_config_appconfig_post_init",
+      "label": ".__post_init__()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "refinement.py",
+      "file_type": "code",
+      "norm_label": ".__post_init__()",
+      "source_file": "backend/config.py",
+      "source_location": "L269"
+    },
+    {
       "id": "backend_config_collect_hf_tokens",
       "label": "_collect_hf_tokens()",
       "_callable": true,
@@ -580,30 +578,6 @@
       "source_location": "L372"
     },
     {
-      "id": "backend_foreground_isolation_extract_solid_sketch_silhouette",
-      "label": "_extract_solid_sketch_silhouette()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "code",
-      "norm_label": "_extract_solid_sketch_silhouette()",
-      "source_file": "backend/foreground_isolation.py",
-      "source_location": "L161"
-    },
-    {
-      "id": "backend_foreground_isolation_extract_with_gemini_isolation",
-      "label": "_extract_with_gemini_isolation()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "code",
-      "norm_label": "_extract_with_gemini_isolation()",
-      "source_file": "backend/foreground_isolation.py",
-      "source_location": "L214"
-    },
-    {
       "id": "backend_foreground_isolation_extract_with_opencv_saliency",
       "label": "_extract_with_opencv_saliency()",
       "_callable": true,
@@ -638,18 +612,6 @@
       "norm_label": "_get_rembg_session()",
       "source_file": "backend/foreground_isolation.py",
       "source_location": "L54"
-    },
-    {
-      "id": "backend_foreground_isolation_isolate_foreground",
-      "label": "isolate_foreground()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "code",
-      "norm_label": "isolate_foreground()",
-      "source_file": "backend/foreground_isolation.py",
-      "source_location": "L430"
     },
     {
       "id": "backend_foreground_isolation_strip_border_connected_background",
@@ -712,16 +674,28 @@
       "source_location": "L35"
     },
     {
-      "id": "tests_test_foreground_isolation_test_isolate_foreground_end_to_end",
-      "label": "test_isolate_foreground_end_to_end()",
+      "id": "backend_main_health_check",
+      "label": "health_check()",
       "_callable": true,
       "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
+      "community": 1,
+      "community_name": "preprocess_sketch",
       "file_type": "code",
-      "norm_label": "test_isolate_foreground_end_to_end()",
-      "source_file": "tests/test_foreground_isolation.py",
-      "source_location": "L57"
+      "norm_label": "health_check()",
+      "source_file": "backend/main.py",
+      "source_location": "L185"
+    },
+    {
+      "id": "backend_main_serve_frontend_spa",
+      "label": "serve_frontend_spa()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "code",
+      "norm_label": "serve_frontend_spa()",
+      "source_file": "backend/main.py",
+      "source_location": "L631"
     },
     {
       "id": "backend_preprocessing_apply_optional_threshold",
@@ -854,6 +828,18 @@
       "norm_label": ".test_api_rejects_unsupported_file()",
       "source_file": "tests/test_preprocessing.py",
       "source_location": "L277"
+    },
+    {
+      "id": "tests_test_preprocessing_testfastapibackendintegration_test_health_check",
+      "label": ".test_health_check()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "code",
+      "norm_label": ".test_health_check()",
+      "source_file": "tests/test_preprocessing.py",
+      "source_location": "L239"
     },
     {
       "id": "tests_test_preprocessing_testsketchpreprocessing_test_case10_invalid_and_corrupted",
@@ -1000,126 +986,6 @@
       "source_location": "L206"
     },
     {
-      "id": "backend_reconstruction_clean_trellis_prompt",
-      "label": "_clean_trellis_prompt()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_clean_trellis_prompt()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L89"
-    },
-    {
-      "id": "backend_reconstruction_generate_dense_volumetric_mesh",
-      "label": "_generate_dense_volumetric_mesh()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_generate_dense_volumetric_mesh()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L408"
-    },
-    {
-      "id": "backend_reconstruction_is_testing_env",
-      "label": "_is_testing_env()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_is_testing_env()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L84"
-    },
-    {
-      "id": "backend_reconstruction_parse_obj_stats",
-      "label": "_parse_obj_stats()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_parse_obj_stats()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L65"
-    },
-    {
-      "id": "backend_reconstruction_prepare_image_for_cloud_3d",
-      "label": "_prepare_image_for_cloud_3d()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_prepare_image_for_cloud_3d()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L111"
-    },
-    {
-      "id": "backend_reconstruction_reconstruct_3d",
-      "label": "reconstruct_3d()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "reconstruct_3d()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L611"
-    },
-    {
-      "id": "backend_reconstruction_reconstruct_with_fast_hf_spaces",
-      "label": "_reconstruct_with_fast_hf_spaces()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_reconstruct_with_fast_hf_spaces()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L238"
-    },
-    {
-      "id": "backend_reconstruction_reconstruct_with_instantmesh_hf",
-      "label": "_reconstruct_with_instantmesh_hf()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_reconstruct_with_instantmesh_hf()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L150"
-    },
-    {
-      "id": "backend_reconstruction_reconstruct_with_nvidia_trellis",
-      "label": "_reconstruct_with_nvidia_trellis()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "_reconstruct_with_nvidia_trellis()",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L320"
-    },
-    {
-      "id": "backend_config_appconfig_post_init",
-      "label": ".__post_init__()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "Application Configuration Settings",
-      "file_type": "code",
-      "norm_label": ".__post_init__()",
-      "source_file": "backend/config.py",
-      "source_location": "L269"
-    },
-    {
       "id": "backend_refinement_preprocess_and_enhance_contrast",
       "label": "preprocess_and_enhance_contrast()",
       "_callable": true,
@@ -1204,6 +1070,66 @@
       "source_location": "L55"
     },
     {
+      "id": "backend_main_api_analyze_sketch",
+      "label": "api_analyze_sketch()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "code",
+      "norm_label": "api_analyze_sketch()",
+      "source_file": "backend/main.py",
+      "source_location": "L532"
+    },
+    {
+      "id": "backend_main_api_full_pipeline",
+      "label": "api_full_pipeline()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "code",
+      "norm_label": "api_full_pipeline()",
+      "source_file": "backend/main.py",
+      "source_location": "L454"
+    },
+    {
+      "id": "backend_main_api_generate_25d",
+      "label": "api_generate_25d()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "code",
+      "norm_label": "api_generate_25d()",
+      "source_file": "backend/main.py",
+      "source_location": "L335"
+    },
+    {
+      "id": "backend_main_api_isolate_foreground",
+      "label": "api_isolate_foreground()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "code",
+      "norm_label": "api_isolate_foreground()",
+      "source_file": "backend/main.py",
+      "source_location": "L293"
+    },
+    {
+      "id": "backend_main_api_preprocess_sketch",
+      "label": "api_preprocess_sketch()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "code",
+      "norm_label": "api_preprocess_sketch()",
+      "source_file": "backend/main.py",
+      "source_location": "L206"
+    },
+    {
       "id": "backend_main_api_reconstruct_sketch_to_3d",
       "label": "api_reconstruct_sketch_to_3d()",
       "_callable": true,
@@ -1216,40 +1142,28 @@
       "source_location": "L569"
     },
     {
-      "id": "backend_main_health_check",
-      "label": "health_check()",
+      "id": "backend_main_api_refine_sketch",
+      "label": "api_refine_sketch()",
       "_callable": true,
       "_origin": "ast",
-      "community": 19,
-      "community_name": "health_check",
+      "community": 18,
+      "community_name": "main.py",
       "file_type": "code",
-      "norm_label": "health_check()",
+      "norm_label": "api_refine_sketch()",
       "source_file": "backend/main.py",
-      "source_location": "L185"
+      "source_location": "L386"
     },
     {
-      "id": "backend_main_serve_frontend_spa",
-      "label": "serve_frontend_spa()",
+      "id": "backend_vision_analysis_analyze_sketch_with_llama_vision",
+      "label": "analyze_sketch_with_llama_vision()",
       "_callable": true,
       "_origin": "ast",
-      "community": 19,
-      "community_name": "health_check",
+      "community": 18,
+      "community_name": "main.py",
       "file_type": "code",
-      "norm_label": "serve_frontend_spa()",
-      "source_file": "backend/main.py",
-      "source_location": "L631"
-    },
-    {
-      "id": "tests_test_preprocessing_testfastapibackendintegration_test_health_check",
-      "label": ".test_health_check()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "health_check",
-      "file_type": "code",
-      "norm_label": ".test_health_check()",
-      "source_file": "tests/test_preprocessing.py",
-      "source_location": "L239"
+      "norm_label": "analyze_sketch_with_llama_vision()",
+      "source_file": "backend/vision_analysis.py",
+      "source_location": "L236"
     },
     {
       "id": "backend_generation_25d_compute_surface_normals",
@@ -1309,7 +1223,7 @@
       "file_type": "code",
       "norm_label": "generate_25d()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L594"
+      "source_location": "L583"
     },
     {
       "id": "backend_generation_25d_get_solid_sketch_silhouette",
@@ -1333,7 +1247,7 @@
       "file_type": "code",
       "norm_label": "_infer_dominant_sketch_color()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L376"
+      "source_location": "L365"
     },
     {
       "id": "backend_generation_25d_render_studio_shading",
@@ -1345,7 +1259,7 @@
       "file_type": "code",
       "norm_label": "_render_studio_shading()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L393"
+      "source_location": "L382"
     },
     {
       "id": "backend_generation_25d_synthesize_gemini_volumetric_concept",
@@ -1357,7 +1271,115 @@
       "file_type": "code",
       "norm_label": "synthesize_gemini_volumetric_concept()",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L466"
+      "source_location": "L455"
+    },
+    {
+      "id": "backend_reconstruction_clean_trellis_prompt",
+      "label": "_clean_trellis_prompt()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_clean_trellis_prompt()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L89"
+    },
+    {
+      "id": "backend_reconstruction_generate_dense_volumetric_mesh",
+      "label": "_generate_dense_volumetric_mesh()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_generate_dense_volumetric_mesh()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L408"
+    },
+    {
+      "id": "backend_reconstruction_is_testing_env",
+      "label": "_is_testing_env()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_is_testing_env()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L84"
+    },
+    {
+      "id": "backend_reconstruction_parse_obj_stats",
+      "label": "_parse_obj_stats()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_parse_obj_stats()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L65"
+    },
+    {
+      "id": "backend_reconstruction_prepare_image_for_cloud_3d",
+      "label": "_prepare_image_for_cloud_3d()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_prepare_image_for_cloud_3d()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L111"
+    },
+    {
+      "id": "backend_reconstruction_reconstruct_3d",
+      "label": "reconstruct_3d()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "reconstruct_3d()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L611"
+    },
+    {
+      "id": "backend_reconstruction_reconstruct_with_fast_hf_spaces",
+      "label": "_reconstruct_with_fast_hf_spaces()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_reconstruct_with_fast_hf_spaces()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L238"
+    },
+    {
+      "id": "backend_reconstruction_reconstruct_with_instantmesh_hf",
+      "label": "_reconstruct_with_instantmesh_hf()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_reconstruct_with_instantmesh_hf()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L150"
+    },
+    {
+      "id": "backend_reconstruction_reconstruct_with_nvidia_trellis",
+      "label": "_reconstruct_with_nvidia_trellis()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "_reconstruct_with_nvidia_trellis()",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L320"
     },
     {
       "id": "tests_test_generation_25d_test_compute_surface_normals_encoding",
@@ -1405,7 +1427,7 @@
       "file_type": "code",
       "norm_label": "test_generate_25d_end_to_end()",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L91"
+      "source_location": "L77"
     },
     {
       "id": "tests_test_generation_25d_test_synthesize_gemini_volumetric_concept_fallback",
@@ -1417,7 +1439,7 @@
       "file_type": "code",
       "norm_label": "test_synthesize_gemini_volumetric_concept_fallback()",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L121"
+      "source_location": "L107"
     },
     {
       "id": "tests_test_prompt_priority_and_studio_refinement_synthetic_adapter_sketch",
@@ -1430,6 +1452,18 @@
       "norm_label": "synthetic_adapter_sketch()",
       "source_file": "tests/test_prompt_priority_and_studio_refinement.py",
       "source_location": "L23"
+    },
+    {
+      "id": "tests_test_prompt_priority_and_studio_refinement_test_api_endpoints_accept_user_prompt",
+      "label": "test_api_endpoints_accept_user_prompt()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 20,
+      "community_name": "test_prompt_priority_and_studio_refinement.py",
+      "file_type": "code",
+      "norm_label": "test_api_endpoints_accept_user_prompt()",
+      "source_file": "tests/test_prompt_priority_and_studio_refinement.py",
+      "source_location": "L65"
     },
     {
       "id": "tests_test_prompt_priority_and_studio_refinement_test_solid_foreground_isolation_prevents_hollow_wireframe",
@@ -1456,112 +1490,52 @@
       "source_location": "L39"
     },
     {
-      "id": "backend_refinement_build_conditioned_prompts",
-      "label": "build_conditioned_prompts()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "build_conditioned_prompts",
-      "file_type": "code",
-      "norm_label": "build_conditioned_prompts()",
-      "source_file": "backend/refinement.py",
-      "source_location": "L182"
-    },
-    {
-      "id": "tests_test_refinement_test_conditioned_prompt_synthesis",
-      "label": "test_conditioned_prompt_synthesis()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "build_conditioned_prompts",
-      "file_type": "code",
-      "norm_label": "test_conditioned_prompt_synthesis()",
-      "source_file": "tests/test_refinement.py",
-      "source_location": "L70"
-    },
-    {
-      "id": "backend_main_api_analyze_sketch",
-      "label": "api_analyze_sketch()",
+      "id": "backend_foreground_isolation_extract_solid_sketch_silhouette",
+      "label": "_extract_solid_sketch_silhouette()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "api_preprocess_sketch",
+      "community_name": "isolate_foreground",
       "file_type": "code",
-      "norm_label": "api_analyze_sketch()",
-      "source_file": "backend/main.py",
-      "source_location": "L532"
+      "norm_label": "_extract_solid_sketch_silhouette()",
+      "source_file": "backend/foreground_isolation.py",
+      "source_location": "L161"
     },
     {
-      "id": "backend_main_api_full_pipeline",
-      "label": "api_full_pipeline()",
+      "id": "backend_foreground_isolation_extract_with_gemini_isolation",
+      "label": "_extract_with_gemini_isolation()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "api_preprocess_sketch",
+      "community_name": "isolate_foreground",
       "file_type": "code",
-      "norm_label": "api_full_pipeline()",
-      "source_file": "backend/main.py",
-      "source_location": "L454"
+      "norm_label": "_extract_with_gemini_isolation()",
+      "source_file": "backend/foreground_isolation.py",
+      "source_location": "L214"
     },
     {
-      "id": "backend_main_api_generate_25d",
-      "label": "api_generate_25d()",
+      "id": "backend_foreground_isolation_isolate_foreground",
+      "label": "isolate_foreground()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "api_preprocess_sketch",
+      "community_name": "isolate_foreground",
       "file_type": "code",
-      "norm_label": "api_generate_25d()",
-      "source_file": "backend/main.py",
-      "source_location": "L335"
+      "norm_label": "isolate_foreground()",
+      "source_file": "backend/foreground_isolation.py",
+      "source_location": "L430"
     },
     {
-      "id": "backend_main_api_isolate_foreground",
-      "label": "api_isolate_foreground()",
+      "id": "tests_test_foreground_isolation_test_isolate_foreground_end_to_end",
+      "label": "test_isolate_foreground_end_to_end()",
       "_callable": true,
       "_origin": "ast",
       "community": 3,
-      "community_name": "api_preprocess_sketch",
+      "community_name": "isolate_foreground",
       "file_type": "code",
-      "norm_label": "api_isolate_foreground()",
-      "source_file": "backend/main.py",
-      "source_location": "L293"
-    },
-    {
-      "id": "backend_main_api_preprocess_sketch",
-      "label": "api_preprocess_sketch()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "code",
-      "norm_label": "api_preprocess_sketch()",
-      "source_file": "backend/main.py",
-      "source_location": "L206"
-    },
-    {
-      "id": "backend_main_api_refine_sketch",
-      "label": "api_refine_sketch()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "code",
-      "norm_label": "api_refine_sketch()",
-      "source_file": "backend/main.py",
-      "source_location": "L386"
-    },
-    {
-      "id": "tests_test_prompt_priority_and_studio_refinement_test_api_endpoints_accept_user_prompt",
-      "label": "test_api_endpoints_accept_user_prompt()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "code",
-      "norm_label": "test_api_endpoints_accept_user_prompt()",
-      "source_file": "tests/test_prompt_priority_and_studio_refinement.py",
-      "source_location": "L65"
+      "norm_label": "test_isolate_foreground_end_to_end()",
+      "source_file": "tests/test_foreground_isolation.py",
+      "source_location": "L57"
     },
     {
       "id": "frontend_src_app_app",
@@ -1720,24 +1694,12 @@
       "source_location": "L11"
     },
     {
-      "id": "backend_vision_analysis_analyze_sketch_with_llama_vision",
-      "label": "analyze_sketch_with_llama_vision()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
-      "file_type": "code",
-      "norm_label": "analyze_sketch_with_llama_vision()",
-      "source_file": "backend/vision_analysis.py",
-      "source_location": "L236"
-    },
-    {
       "id": "backend_vision_analysis_analyze_with_gemini",
       "label": "_analyze_with_gemini()",
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "_analyze_with_gemini()",
       "source_file": "backend/vision_analysis.py",
@@ -1749,7 +1711,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "_clean_json_text()",
       "source_file": "backend/vision_analysis.py",
@@ -1761,7 +1723,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "encode_image_to_base64()",
       "source_file": "backend/vision_analysis.py",
@@ -1773,7 +1735,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "_heuristic_sketch_analysis()",
       "source_file": "backend/vision_analysis.py",
@@ -1785,7 +1747,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "chair_sketch()",
       "source_file": "tests/test_vision.py",
@@ -1797,7 +1759,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "mug_sketch()",
       "source_file": "tests/test_vision.py",
@@ -1809,7 +1771,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "rough_ambiguous_sketch()",
       "source_file": "tests/test_vision.py",
@@ -1821,7 +1783,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_api_analyze_sketch_endpoint()",
       "source_file": "tests/test_vision.py",
@@ -1833,7 +1795,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_api_reconstruct_with_vision_analysis()",
       "source_file": "tests/test_vision.py",
@@ -1845,7 +1807,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_chair_sketch_analysis()",
       "source_file": "tests/test_vision.py",
@@ -1857,7 +1819,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_invalid_image_raises_error()",
       "source_file": "tests/test_vision.py",
@@ -1869,7 +1831,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_json_cleaner_utility()",
       "source_file": "tests/test_vision.py",
@@ -1881,7 +1843,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_mug_sketch_analysis()",
       "source_file": "tests/test_vision.py",
@@ -1893,7 +1855,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_remote_llama_vision_error_graceful_fallback()",
       "source_file": "tests/test_vision.py",
@@ -1905,7 +1867,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_remote_llama_vision_mock_success()",
       "source_file": "tests/test_vision.py",
@@ -1917,11 +1879,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": ".test_rough_ambiguous_sketch_handling()",
       "source_file": "tests/test_vision.py",
       "source_location": "L109"
+    },
+    {
+      "id": "backend_refinement_build_conditioned_prompts",
+      "label": "build_conditioned_prompts()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "test_refinement.py",
+      "file_type": "code",
+      "norm_label": "build_conditioned_prompts()",
+      "source_file": "backend/refinement.py",
+      "source_location": "L182"
     },
     {
       "id": "backend_refinement_validate_refinement_quality",
@@ -1970,6 +1944,18 @@
       "norm_label": "test_api_refine_sketch_endpoint()",
       "source_file": "tests/test_refinement.py",
       "source_location": "L185"
+    },
+    {
+      "id": "tests_test_refinement_test_conditioned_prompt_synthesis",
+      "label": "test_conditioned_prompt_synthesis()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "test_refinement.py",
+      "file_type": "code",
+      "norm_label": "test_conditioned_prompt_synthesis()",
+      "source_file": "tests/test_refinement.py",
+      "source_location": "L70"
     },
     {
       "id": "tests_test_refinement_test_faint_pencil_sketch_contrast_enhancement",
@@ -2449,17 +2435,6 @@
       "source_location": ""
     },
     {
-      "id": "backend_foreground_isolation_py_path",
-      "label": "Path",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "code",
-      "norm_label": "path",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "backend_generation_25d",
       "label": "generation_25d.py",
       "_origin": "ast",
@@ -2548,17 +2523,6 @@
       "source_location": ""
     },
     {
-      "id": "tests_test_preprocessing",
-      "label": "test_preprocessing.py",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "code",
-      "norm_label": "test_preprocessing.py",
-      "source_file": "tests/test_preprocessing.py",
-      "source_location": "L1"
-    },
-    {
       "id": "backend_config_rationale_1",
       "label": "Configuration module for Sketch2Shape AI Preprocessing, Vision, and Backend.",
       "_origin": "ast",
@@ -2568,17 +2532,6 @@
       "norm_label": "configuration module for sketch2shape ai preprocessing, vision, and backend.",
       "source_file": "backend/config.py",
       "source_location": "L1"
-    },
-    {
-      "id": "backend_config_rationale_140",
-      "label": "Settings for foreground extraction and background removal.",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "rationale",
-      "norm_label": "settings for foreground extraction and background removal.",
-      "source_file": "backend/config.py",
-      "source_location": "L140"
     },
     {
       "id": "backend_config_rationale_210",
@@ -2603,6 +2556,17 @@
       "source_location": "L235"
     },
     {
+      "id": "backend_config_rationale_257",
+      "label": "Application-wide paths and settings.",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "refinement.py",
+      "file_type": "rationale",
+      "norm_label": "application-wide paths and settings.",
+      "source_file": "backend/config.py",
+      "source_location": "L257"
+    },
+    {
       "id": "backend_config_rationale_29",
       "label": "Collects all available Hugging Face tokens from environment for quota rotation.",
       "_origin": "ast",
@@ -2612,17 +2576,6 @@
       "norm_label": "collects all available hugging face tokens from environment for quota rotation.",
       "source_file": "backend/config.py",
       "source_location": "L29"
-    },
-    {
-      "id": "backend_config_rationale_45",
-      "label": "Configuration options for sketch image preprocessing.",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "rationale",
-      "norm_label": "configuration options for sketch image preprocessing.",
-      "source_file": "backend/config.py",
-      "source_location": "L45"
     },
     {
       "id": "backend_config_rationale_74",
@@ -2645,28 +2598,6 @@
       "norm_label": "foreground isolation and background removal module for sketch2shape ai. this...",
       "source_file": "backend/foreground_isolation.py",
       "source_location": "L1"
-    },
-    {
-      "id": "backend_foreground_isolation_rationale_165",
-      "label": "Extracts a watertight, solid subject silhouette from sketch strokes. Prevents\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "rationale",
-      "norm_label": "extracts a watertight, solid subject silhouette from sketch strokes. prevents...",
-      "source_file": "backend/foreground_isolation.py",
-      "source_location": "L165"
-    },
-    {
-      "id": "backend_foreground_isolation_rationale_218",
-      "label": "Uses Gemini Vision API to detect the subject bounding box, ignore desk/paper\u2026",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "rationale",
-      "norm_label": "uses gemini vision api to detect the subject bounding box, ignore desk/paper...",
-      "source_file": "backend/foreground_isolation.py",
-      "source_location": "L218"
     },
     {
       "id": "backend_foreground_isolation_rationale_305",
@@ -2711,17 +2642,6 @@
       "norm_label": "outcome of the foreground extraction process.",
       "source_file": "backend/foreground_isolation.py",
       "source_location": "L38"
-    },
-    {
-      "id": "backend_foreground_isolation_rationale_437",
-      "label": "Main pipeline execution for foreground isolation and background cleaning.",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "rationale",
-      "norm_label": "main pipeline execution for foreground isolation and background cleaning.",
-      "source_file": "backend/foreground_isolation.py",
-      "source_location": "L437"
     },
     {
       "id": "backend_foreground_isolation_rationale_55",
@@ -2834,6 +2754,17 @@
       "source_location": "L1"
     },
     {
+      "id": "backend_refinement_rationale_53",
+      "label": "Rigorous evaluation of refined image vs original sketch structure.",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "refinement.py",
+      "file_type": "rationale",
+      "norm_label": "rigorous evaluation of refined image vs original sketch structure.",
+      "source_file": "backend/refinement.py",
+      "source_location": "L53"
+    },
+    {
       "id": "backend_vision_analysis_rationale_1",
       "label": "Vision Integration for Sketch Understanding in Sketch2Shape AI. Analyzes hand-\u2026",
       "_origin": "ast",
@@ -2878,26 +2809,26 @@
       "source_location": "L36"
     },
     {
-      "id": "tests_test_foreground_isolation_rationale_58",
-      "label": "Verify end-to-end foreground isolation pipeline with generated sketch.",
+      "id": "backend_main_py_any",
+      "label": "Any",
       "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "rationale",
-      "norm_label": "verify end-to-end foreground isolation pipeline with generated sketch.",
-      "source_file": "tests/test_foreground_isolation.py",
-      "source_location": "L58"
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "code",
+      "norm_label": "any",
+      "source_file": "",
+      "source_location": ""
     },
     {
-      "id": "tests_test_preprocessing_rationale_1",
-      "label": "Comprehensive Pytest Suite for Sketch2Shape AI Preprocessing Module.",
+      "id": "backend_main_py_get",
+      "label": "get",
       "_origin": "ast",
-      "community": 0,
-      "community_name": "refinement.py",
-      "file_type": "rationale",
-      "norm_label": "comprehensive pytest suite for sketch2shape ai preprocessing module.",
-      "source_file": "tests/test_preprocessing.py",
-      "source_location": "L1"
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "code",
+      "norm_label": "get",
+      "source_file": "",
+      "source_location": ""
     },
     {
       "id": "backend_preprocessing_py_ndarray",
@@ -2922,6 +2853,17 @@
       "source_location": ""
     },
     {
+      "id": "tests_test_preprocessing",
+      "label": "test_preprocessing.py",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "code",
+      "norm_label": "test_preprocessing.py",
+      "source_file": "tests/test_preprocessing.py",
+      "source_location": "L1"
+    },
+    {
       "id": "tests_test_preprocessing_py_path",
       "label": "Path",
       "_origin": "ast",
@@ -2931,6 +2873,28 @@
       "norm_label": "path",
       "source_file": "",
       "source_location": ""
+    },
+    {
+      "id": "backend_config_rationale_45",
+      "label": "Configuration options for sketch image preprocessing.",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "rationale",
+      "norm_label": "configuration options for sketch image preprocessing.",
+      "source_file": "backend/config.py",
+      "source_location": "L45"
+    },
+    {
+      "id": "backend_main_rationale_186",
+      "label": "Health check endpoint to verify backend service and model status.",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "rationale",
+      "norm_label": "health check endpoint to verify backend service and model status.",
+      "source_file": "backend/main.py",
+      "source_location": "L186"
     },
     {
       "id": "backend_preprocessing_rationale_198",
@@ -3019,6 +2983,17 @@
       "norm_label": "validate that the processed image meets model-ready specifications. args:...",
       "source_file": "backend/preprocessing.py",
       "source_location": "L52"
+    },
+    {
+      "id": "tests_test_preprocessing_rationale_1",
+      "label": "Comprehensive Pytest Suite for Sketch2Shape AI Preprocessing Module.",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "file_type": "rationale",
+      "norm_label": "comprehensive pytest suite for sketch2shape ai preprocessing module.",
+      "source_file": "tests/test_preprocessing.py",
+      "source_location": "L1"
     },
     {
       "id": "tests_test_preprocessing_rationale_108",
@@ -3186,158 +3161,15 @@
       "source_location": "L93"
     },
     {
-      "id": "backend_reconstruction_py_any",
-      "label": "Any",
+      "id": "frontend_postcss_config",
+      "label": "postcss.config.js",
       "_origin": "ast",
       "community": 10,
-      "community_name": "reconstruct_3d",
+      "community_name": "postcss.config.js",
       "file_type": "code",
-      "norm_label": "any",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "backend_reconstruction_py_ndarray",
-      "label": "ndarray",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "ndarray",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "backend_reconstruction_py_path",
-      "label": "Path",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "code",
-      "norm_label": "path",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "backend_reconstruction_rationale_116",
-      "label": "Prepares a clean, solid volumetric input image for 3D reconstruction models. -\u2026",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "prepares a clean, solid volumetric input image for 3d reconstruction models. -...",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L116"
-    },
-    {
-      "id": "backend_reconstruction_rationale_155",
-      "label": "Runs TencentARC/InstantMesh on Hugging Face Spaces GPU with multi-token\u2026",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "runs tencentarc/instantmesh on hugging face spaces gpu with multi-token...",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L155"
-    },
-    {
-      "id": "backend_reconstruction_rationale_243",
-      "label": "Attempts single-pass 3D reconstruction via fast Hugging Face ZeroGPU Spaces\u2026",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "attempts single-pass 3d reconstruction via fast hugging face zerogpu spaces...",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L243"
-    },
-    {
-      "id": "backend_reconstruction_rationale_325",
-      "label": "Invokes Microsoft TRELLIS via NVIDIA NIM API on DGX Cloud.",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "invokes microsoft trellis via nvidia nim api on dgx cloud.",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L325"
-    },
-    {
-      "id": "backend_reconstruction_rationale_416",
-      "label": "Synthesizes a true 360\u00b0 closed, silhouette-carved, vertex-colored 3D mesh (OBJ\u2026",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "synthesizes a true 360\u00b0 closed, silhouette-carved, vertex-colored 3d mesh (obj...",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L416"
-    },
-    {
-      "id": "backend_reconstruction_rationale_53",
-      "label": "Result of 3D reconstruction inference.",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "result of 3d reconstruction inference.",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L53"
-    },
-    {
-      "id": "backend_reconstruction_rationale_617",
-      "label": "Executes image-to-3D reconstruction from a preprocessed model-ready sketch.\u2026",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "executes image-to-3d reconstruction from a preprocessed model-ready sketch....",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L617"
-    },
-    {
-      "id": "backend_reconstruction_rationale_66",
-      "label": "Counts vertices and faces in an OBJ file.",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "counts vertices and faces in an obj file.",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L66"
-    },
-    {
-      "id": "backend_reconstruction_rationale_85",
-      "label": "Returns True if code is executing within automated tests (pytest).",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "returns true if code is executing within automated tests (pytest).",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L85"
-    },
-    {
-      "id": "backend_reconstruction_rationale_90",
-      "label": "Sanitizes and shortens prompt to fit NVIDIA NIM recommended <=75 characters.",
-      "_origin": "ast",
-      "community": 10,
-      "community_name": "reconstruct_3d",
-      "file_type": "rationale",
-      "norm_label": "sanitizes and shortens prompt to fit nvidia nim recommended <=75 characters.",
-      "source_file": "backend/reconstruction.py",
-      "source_location": "L90"
-    },
-    {
-      "id": "backend_config_rationale_257",
-      "label": "Application-wide paths and settings.",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "Application Configuration Settings",
-      "file_type": "rationale",
-      "norm_label": "application-wide paths and settings.",
-      "source_file": "backend/config.py",
-      "source_location": "L257"
+      "norm_label": "postcss.config.js",
+      "source_file": "frontend/postcss.config.js",
+      "source_location": "L1"
     },
     {
       "id": "tests_init",
@@ -3550,6 +3382,28 @@
       "source_location": ""
     },
     {
+      "id": "backend_main_py_post",
+      "label": "post",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "code",
+      "norm_label": "post",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "backend_main_py_uploadfile",
+      "label": "UploadFile",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "code",
+      "norm_label": "uploadfile",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
       "id": "backend_main_rationale_1",
       "label": "FastAPI Application for Sketch2Shape AI Backend. Provides endpoints for: - Step\u2026",
       "_origin": "ast",
@@ -3559,6 +3413,72 @@
       "norm_label": "fastapi application for sketch2shape ai backend. provides endpoints for: - step...",
       "source_file": "backend/main.py",
       "source_location": "L1"
+    },
+    {
+      "id": "backend_main_rationale_212",
+      "label": "Preprocesses an uploaded hand-drawn sketch to make it model-ready.",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "rationale",
+      "norm_label": "preprocesses an uploaded hand-drawn sketch to make it model-ready.",
+      "source_file": "backend/main.py",
+      "source_location": "L212"
+    },
+    {
+      "id": "backend_main_rationale_299",
+      "label": "Isolates the sketch foreground, removes background paper noise, and centers on\u2026",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "rationale",
+      "norm_label": "isolates the sketch foreground, removes background paper noise, and centers on...",
+      "source_file": "backend/main.py",
+      "source_location": "L299"
+    },
+    {
+      "id": "backend_main_rationale_345",
+      "label": "Generates 2.5D Volumetric data: Monocular Depth Map, Normal Map, 3D Relief\u2026",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "rationale",
+      "norm_label": "generates 2.5d volumetric data: monocular depth map, normal map, 3d relief...",
+      "source_file": "backend/main.py",
+      "source_location": "L345"
+    },
+    {
+      "id": "backend_main_rationale_392",
+      "label": "Refines rough user sketches into clean, visually coherent images with prompt\u2026",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "rationale",
+      "norm_label": "refines rough user sketches into clean, visually coherent images with prompt...",
+      "source_file": "backend/main.py",
+      "source_location": "L392"
+    },
+    {
+      "id": "backend_main_rationale_460",
+      "label": "Executes the complete end-to-end hackathon pipeline: [1] OpenCV Preprocess ->\u2026",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "rationale",
+      "norm_label": "executes the complete end-to-end hackathon pipeline: [1] opencv preprocess ->...",
+      "source_file": "backend/main.py",
+      "source_location": "L460"
+    },
+    {
+      "id": "backend_main_rationale_537",
+      "label": "Understands and extracts 3D semantic information from a sketch using Llama 3.2\u2026",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "rationale",
+      "norm_label": "understands and extracts 3d semantic information from a sketch using llama 3.2...",
+      "source_file": "backend/main.py",
+      "source_location": "L537"
     },
     {
       "id": "backend_main_rationale_576",
@@ -3572,6 +3492,17 @@
       "source_location": "L576"
     },
     {
+      "id": "backend_vision_analysis_rationale_241",
+      "label": "Analyzes a sketch using Google Gemini, Llama 3.2 Vision, or local heuristic\u2026",
+      "_origin": "ast",
+      "community": 18,
+      "community_name": "main.py",
+      "file_type": "rationale",
+      "norm_label": "analyzes a sketch using google gemini, llama 3.2 vision, or local heuristic...",
+      "source_file": "backend/vision_analysis.py",
+      "source_location": "L241"
+    },
+    {
       "id": "backend_vision_analysis_rationale_68",
       "label": "Full structured understanding of a hand-drawn sketch.",
       "_origin": "ast",
@@ -3581,39 +3512,6 @@
       "norm_label": "full structured understanding of a hand-drawn sketch.",
       "source_file": "backend/vision_analysis.py",
       "source_location": "L68"
-    },
-    {
-      "id": "backend_main_py_any",
-      "label": "Any",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "health_check",
-      "file_type": "code",
-      "norm_label": "any",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "backend_main_py_get",
-      "label": "get",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "health_check",
-      "file_type": "code",
-      "norm_label": "get",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "backend_main_rationale_186",
-      "label": "Health check endpoint to verify backend service and model status.",
-      "_origin": "ast",
-      "community": 19,
-      "community_name": "health_check",
-      "file_type": "rationale",
-      "norm_label": "health check endpoint to verify backend service and model status.",
-      "source_file": "backend/main.py",
-      "source_location": "L186"
     },
     {
       "id": "backend_generation_25d_py_any",
@@ -3639,6 +3537,39 @@
     },
     {
       "id": "backend_generation_25d_py_path",
+      "label": "Path",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "path",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "backend_reconstruction_py_any",
+      "label": "Any",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "any",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "backend_reconstruction_py_ndarray",
+      "label": "ndarray",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "code",
+      "norm_label": "ndarray",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "backend_reconstruction_py_path",
       "label": "Path",
       "_origin": "ast",
       "community": 2,
@@ -3726,7 +3657,7 @@
       "source_location": "L242"
     },
     {
-      "id": "backend_generation_25d_rationale_377",
+      "id": "backend_generation_25d_rationale_366",
       "label": "Extracts a vibrant studio base color from colored sketch strokes, or warm\u2026",
       "_origin": "ast",
       "community": 2,
@@ -3734,7 +3665,18 @@
       "file_type": "rationale",
       "norm_label": "extracts a vibrant studio base color from colored sketch strokes, or warm...",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L377"
+      "source_location": "L366"
+    },
+    {
+      "id": "backend_generation_25d_rationale_390",
+      "label": "Renders a volumetric studio shaded concept image from depth and normals.",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "renders a volumetric studio shaded concept image from depth and normals.",
+      "source_file": "backend/generation_25d.py",
+      "source_location": "L390"
     },
     {
       "id": "backend_generation_25d_rationale_40",
@@ -3748,18 +3690,7 @@
       "source_location": "L40"
     },
     {
-      "id": "backend_generation_25d_rationale_401",
-      "label": "Renders a volumetric studio shaded concept image from depth and normals.",
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "generate_25d",
-      "file_type": "rationale",
-      "norm_label": "renders a volumetric studio shaded concept image from depth and normals.",
-      "source_file": "backend/generation_25d.py",
-      "source_location": "L401"
-    },
-    {
-      "id": "backend_generation_25d_rationale_476",
+      "id": "backend_generation_25d_rationale_465",
       "label": "Generates a 2.5D volumetric studio concept render and SVG using Gemini (Key 2).",
       "_origin": "ast",
       "community": 2,
@@ -3767,7 +3698,7 @@
       "file_type": "rationale",
       "norm_label": "generates a 2.5d volumetric studio concept render and svg using gemini (key 2).",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L476"
+      "source_location": "L465"
     },
     {
       "id": "backend_generation_25d_rationale_57",
@@ -3781,7 +3712,7 @@
       "source_location": "L57"
     },
     {
-      "id": "backend_generation_25d_rationale_600",
+      "id": "backend_generation_25d_rationale_589",
       "label": "Executes the full 2.5D volumetric generation pipeline.",
       "_origin": "ast",
       "community": 2,
@@ -3789,7 +3720,117 @@
       "file_type": "rationale",
       "norm_label": "executes the full 2.5d volumetric generation pipeline.",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L600"
+      "source_location": "L589"
+    },
+    {
+      "id": "backend_reconstruction_rationale_116",
+      "label": "Prepares a clean, solid volumetric input image for 3D reconstruction models. -\u2026",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "prepares a clean, solid volumetric input image for 3d reconstruction models. -...",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L116"
+    },
+    {
+      "id": "backend_reconstruction_rationale_155",
+      "label": "Runs TencentARC/InstantMesh on Hugging Face Spaces GPU with multi-token\u2026",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "runs tencentarc/instantmesh on hugging face spaces gpu with multi-token...",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L155"
+    },
+    {
+      "id": "backend_reconstruction_rationale_243",
+      "label": "Attempts single-pass 3D reconstruction via fast Hugging Face ZeroGPU Spaces\u2026",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "attempts single-pass 3d reconstruction via fast hugging face zerogpu spaces...",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L243"
+    },
+    {
+      "id": "backend_reconstruction_rationale_325",
+      "label": "Invokes Microsoft TRELLIS via NVIDIA NIM API on DGX Cloud.",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "invokes microsoft trellis via nvidia nim api on dgx cloud.",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L325"
+    },
+    {
+      "id": "backend_reconstruction_rationale_416",
+      "label": "Synthesizes a true 360\u00b0 closed, silhouette-carved, vertex-colored 3D mesh (OBJ\u2026",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "synthesizes a true 360\u00b0 closed, silhouette-carved, vertex-colored 3d mesh (obj...",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L416"
+    },
+    {
+      "id": "backend_reconstruction_rationale_53",
+      "label": "Result of 3D reconstruction inference.",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "result of 3d reconstruction inference.",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L53"
+    },
+    {
+      "id": "backend_reconstruction_rationale_617",
+      "label": "Executes image-to-3D reconstruction from a preprocessed model-ready sketch.\u2026",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "executes image-to-3d reconstruction from a preprocessed model-ready sketch....",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L617"
+    },
+    {
+      "id": "backend_reconstruction_rationale_66",
+      "label": "Counts vertices and faces in an OBJ file.",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "counts vertices and faces in an obj file.",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L66"
+    },
+    {
+      "id": "backend_reconstruction_rationale_85",
+      "label": "Returns True if code is executing within automated tests (pytest).",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "returns true if code is executing within automated tests (pytest).",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L85"
+    },
+    {
+      "id": "backend_reconstruction_rationale_90",
+      "label": "Sanitizes and shortens prompt to fit NVIDIA NIM recommended <=75 characters.",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "generate_25d",
+      "file_type": "rationale",
+      "norm_label": "sanitizes and shortens prompt to fit nvidia nim recommended <=75 characters.",
+      "source_file": "backend/reconstruction.py",
+      "source_location": "L90"
     },
     {
       "id": "tests_test_generation_25d_rationale_1",
@@ -3803,7 +3844,7 @@
       "source_location": "L1"
     },
     {
-      "id": "tests_test_generation_25d_rationale_122",
+      "id": "tests_test_generation_25d_rationale_108",
       "label": "Verify volumetric studio concept synthesis functions correctly with fallback.",
       "_origin": "ast",
       "community": 2,
@@ -3811,7 +3852,7 @@
       "file_type": "rationale",
       "norm_label": "verify volumetric studio concept synthesis functions correctly with fallback.",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L122"
+      "source_location": "L108"
     },
     {
       "id": "tests_test_generation_25d_rationale_17",
@@ -3847,7 +3888,7 @@
       "source_location": "L52"
     },
     {
-      "id": "tests_test_generation_25d_rationale_92",
+      "id": "tests_test_generation_25d_rationale_78",
       "label": "Verify full 2.5D pipeline from input image to depth, normal, and mesh artifacts.",
       "_origin": "ast",
       "community": 2,
@@ -3855,7 +3896,7 @@
       "file_type": "rationale",
       "norm_label": "verify full 2.5d pipeline from input image to depth, normal, and mesh artifacts.",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L92"
+      "source_location": "L78"
     },
     {
       "id": "tests_test_prompt_priority_and_studio_refinement",
@@ -3935,125 +3976,81 @@
       "source_location": "L52"
     },
     {
-      "id": "backend_refinement_rationale_186",
-      "label": "Synthesizes structured refinement prompts combining Llama analysis and user\u2026",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "build_conditioned_prompts",
-      "file_type": "rationale",
-      "norm_label": "synthesizes structured refinement prompts combining llama analysis and user...",
-      "source_file": "backend/refinement.py",
-      "source_location": "L186"
-    },
-    {
-      "id": "tests_test_refinement_rationale_71",
-      "label": "Verifies that Llama structured output is converted into explicit conditioning\u2026",
-      "_origin": "ast",
-      "community": 21,
-      "community_name": "build_conditioned_prompts",
-      "file_type": "rationale",
-      "norm_label": "verifies that llama structured output is converted into explicit conditioning...",
-      "source_file": "tests/test_refinement.py",
-      "source_location": "L71"
-    },
-    {
-      "id": "backend_main_py_post",
-      "label": "post",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "code",
-      "norm_label": "post",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "backend_main_py_uploadfile",
-      "label": "UploadFile",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "code",
-      "norm_label": "uploadfile",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "backend_main_rationale_212",
-      "label": "Preprocesses an uploaded hand-drawn sketch to make it model-ready.",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "rationale",
-      "norm_label": "preprocesses an uploaded hand-drawn sketch to make it model-ready.",
-      "source_file": "backend/main.py",
-      "source_location": "L212"
-    },
-    {
-      "id": "backend_main_rationale_299",
-      "label": "Isolates the sketch foreground, removes background paper noise, and centers on\u2026",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "rationale",
-      "norm_label": "isolates the sketch foreground, removes background paper noise, and centers on...",
-      "source_file": "backend/main.py",
-      "source_location": "L299"
-    },
-    {
-      "id": "backend_main_rationale_345",
-      "label": "Generates 2.5D Volumetric data: Monocular Depth Map, Normal Map, 3D Relief\u2026",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "rationale",
-      "norm_label": "generates 2.5d volumetric data: monocular depth map, normal map, 3d relief...",
-      "source_file": "backend/main.py",
-      "source_location": "L345"
-    },
-    {
-      "id": "backend_main_rationale_392",
-      "label": "Refines rough user sketches into clean, visually coherent images with prompt\u2026",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "rationale",
-      "norm_label": "refines rough user sketches into clean, visually coherent images with prompt...",
-      "source_file": "backend/main.py",
-      "source_location": "L392"
-    },
-    {
-      "id": "backend_main_rationale_460",
-      "label": "Executes the complete end-to-end hackathon pipeline: [1] OpenCV Preprocess ->\u2026",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "rationale",
-      "norm_label": "executes the complete end-to-end hackathon pipeline: [1] opencv preprocess ->...",
-      "source_file": "backend/main.py",
-      "source_location": "L460"
-    },
-    {
-      "id": "backend_main_rationale_537",
-      "label": "Understands and extracts 3D semantic information from a sketch using Llama 3.2\u2026",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
-      "file_type": "rationale",
-      "norm_label": "understands and extracts 3d semantic information from a sketch using llama 3.2...",
-      "source_file": "backend/main.py",
-      "source_location": "L537"
-    },
-    {
       "id": "tests_test_prompt_priority_and_studio_refinement_rationale_66",
       "label": "Verifies all endpoints accept user_prompt without error and propagate it.",
       "_origin": "ast",
-      "community": 3,
-      "community_name": "api_preprocess_sketch",
+      "community": 20,
+      "community_name": "test_prompt_priority_and_studio_refinement.py",
       "file_type": "rationale",
       "norm_label": "verifies all endpoints accept user_prompt without error and propagate it.",
       "source_file": "tests/test_prompt_priority_and_studio_refinement.py",
       "source_location": "L66"
+    },
+    {
+      "id": "backend_foreground_isolation_py_path",
+      "label": "Path",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "isolate_foreground",
+      "file_type": "code",
+      "norm_label": "path",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "backend_config_rationale_140",
+      "label": "Settings for foreground extraction and background removal.",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "isolate_foreground",
+      "file_type": "rationale",
+      "norm_label": "settings for foreground extraction and background removal.",
+      "source_file": "backend/config.py",
+      "source_location": "L140"
+    },
+    {
+      "id": "backend_foreground_isolation_rationale_165",
+      "label": "Extracts a watertight, solid subject silhouette from sketch strokes. Prevents\u2026",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "isolate_foreground",
+      "file_type": "rationale",
+      "norm_label": "extracts a watertight, solid subject silhouette from sketch strokes. prevents...",
+      "source_file": "backend/foreground_isolation.py",
+      "source_location": "L165"
+    },
+    {
+      "id": "backend_foreground_isolation_rationale_218",
+      "label": "Uses Gemini Vision API to detect the subject bounding box, ignore desk/paper\u2026",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "isolate_foreground",
+      "file_type": "rationale",
+      "norm_label": "uses gemini vision api to detect the subject bounding box, ignore desk/paper...",
+      "source_file": "backend/foreground_isolation.py",
+      "source_location": "L218"
+    },
+    {
+      "id": "backend_foreground_isolation_rationale_437",
+      "label": "Main pipeline execution for foreground isolation and background cleaning.",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "isolate_foreground",
+      "file_type": "rationale",
+      "norm_label": "main pipeline execution for foreground isolation and background cleaning.",
+      "source_file": "backend/foreground_isolation.py",
+      "source_location": "L437"
+    },
+    {
+      "id": "tests_test_foreground_isolation_rationale_58",
+      "label": "Verify end-to-end foreground isolation pipeline with generated sketch.",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "isolate_foreground",
+      "file_type": "rationale",
+      "norm_label": "verify end-to-end foreground isolation pipeline with generated sketch.",
+      "source_file": "tests/test_foreground_isolation.py",
+      "source_location": "L58"
     },
     {
       "id": "frontend_package",
@@ -4544,7 +4541,7 @@
       "label": "BaseModel",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "basemodel",
       "source_file": "",
@@ -4555,7 +4552,7 @@
       "label": "Path",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "path",
       "source_file": "",
@@ -4566,7 +4563,7 @@
       "label": "LlamaVisionConfig",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "llamavisionconfig",
       "source_file": "",
@@ -4577,7 +4574,7 @@
       "label": "test_vision.py",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "test_vision.py",
       "source_file": "tests/test_vision.py",
@@ -4588,7 +4585,7 @@
       "label": "fixture",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "fixture",
       "source_file": "",
@@ -4599,7 +4596,7 @@
       "label": "Path",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "code",
       "norm_label": "path",
       "source_file": "",
@@ -4610,7 +4607,7 @@
       "label": "Reads an image file and converts it to a base64 data string.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "reads an image file and converts it to a base64 data string.",
       "source_file": "backend/vision_analysis.py",
@@ -4621,7 +4618,7 @@
       "label": "Strips Markdown fences or surrounding conversational wrappers from JSON output.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "strips markdown fences or surrounding conversational wrappers from json output.",
       "source_file": "backend/vision_analysis.py",
@@ -4632,29 +4629,18 @@
       "label": "Invokes Google Gemini Vision model using official Generative Language REST API.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "invokes google gemini vision model using official generative language rest api.",
       "source_file": "backend/vision_analysis.py",
       "source_location": "L161"
     },
     {
-      "id": "backend_vision_analysis_rationale_241",
-      "label": "Analyzes a sketch using Google Gemini, Llama 3.2 Vision, or local heuristic\u2026",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
-      "file_type": "rationale",
-      "norm_label": "analyzes a sketch using google gemini, llama 3.2 vision, or local heuristic...",
-      "source_file": "backend/vision_analysis.py",
-      "source_location": "L241"
-    },
-    {
       "id": "backend_vision_analysis_rationale_346",
       "label": "Extracts structural and geometric features using OpenCV contour and geometry\u2026",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "extracts structural and geometric features using opencv contour and geometry...",
       "source_file": "backend/vision_analysis.py",
@@ -4665,7 +4651,7 @@
       "label": "Represents an identified component or section of the sketch.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "represents an identified component or section of the sketch.",
       "source_file": "backend/vision_analysis.py",
@@ -4676,7 +4662,7 @@
       "label": "Geometric and proportional characteristics extracted from the sketch.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "geometric and proportional characteristics extracted from the sketch.",
       "source_file": "backend/vision_analysis.py",
@@ -4687,7 +4673,7 @@
       "label": "Test suite for Llama 3.2 Vision Sketch Understanding in Sketch2Shape AI.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "test suite for llama 3.2 vision sketch understanding in sketch2shape ai.",
       "source_file": "tests/test_vision.py",
@@ -4698,7 +4684,7 @@
       "label": "Tests that rough/ambiguous drawings produce valid analysis with stated\u2026",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "tests that rough/ambiguous drawings produce valid analysis with stated...",
       "source_file": "tests/test_vision.py",
@@ -4709,7 +4695,7 @@
       "label": "Tests that markdown fences and raw text are stripped properly.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "tests that markdown fences and raw text are stripped properly.",
       "source_file": "tests/test_vision.py",
@@ -4720,7 +4706,7 @@
       "label": "Tests remote Llama 3.2 Vision inference pipeline using mock HTTP response.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "tests remote llama 3.2 vision inference pipeline using mock http response.",
       "source_file": "tests/test_vision.py",
@@ -4731,7 +4717,7 @@
       "label": "Tests that remote HTTP errors gracefully fall back to local heuristic analysis.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "tests that remote http errors gracefully fall back to local heuristic analysis.",
       "source_file": "tests/test_vision.py",
@@ -4742,7 +4728,7 @@
       "label": "Verifies that non-existent image paths raise FileNotFoundError.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "verifies that non-existent image paths raise filenotfounderror.",
       "source_file": "tests/test_vision.py",
@@ -4753,7 +4739,7 @@
       "label": "Tests for the vision endpoints in FastAPI.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "tests for the vision endpoints in fastapi.",
       "source_file": "tests/test_vision.py",
@@ -4764,7 +4750,7 @@
       "label": "Generates a clean chair sketch.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "generates a clean chair sketch.",
       "source_file": "tests/test_vision.py",
@@ -4775,7 +4761,7 @@
       "label": "Generates a clean coffee mug sketch.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "generates a clean coffee mug sketch.",
       "source_file": "tests/test_vision.py",
@@ -4786,7 +4772,7 @@
       "label": "Generates a rough, loose, ambiguous drawing.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "generates a rough, loose, ambiguous drawing.",
       "source_file": "tests/test_vision.py",
@@ -4797,7 +4783,7 @@
       "label": "Tests for sketch understanding and structured JSON extraction.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "tests for sketch understanding and structured json extraction.",
       "source_file": "tests/test_vision.py",
@@ -4808,7 +4794,7 @@
       "label": "Verifies semantic identification of chair parts, proportions, and view.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "verifies semantic identification of chair parts, proportions, and view.",
       "source_file": "tests/test_vision.py",
@@ -4819,7 +4805,7 @@
       "label": "Verifies semantic identification of coffee mug with handle and rim.",
       "_origin": "ast",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "file_type": "rationale",
       "norm_label": "verifies semantic identification of coffee mug with handle and rim.",
       "source_file": "tests/test_vision.py",
@@ -4870,6 +4856,17 @@
       "source_location": "L183"
     },
     {
+      "id": "backend_refinement_rationale_186",
+      "label": "Synthesizes structured refinement prompts combining Llama analysis and user\u2026",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "test_refinement.py",
+      "file_type": "rationale",
+      "norm_label": "synthesizes structured refinement prompts combining llama analysis and user...",
+      "source_file": "backend/refinement.py",
+      "source_location": "L186"
+    },
+    {
       "id": "backend_refinement_rationale_446",
       "label": "Rigorous structural and visual validation. Checks: - Shape, dimensions, and\u2026",
       "_origin": "ast",
@@ -4879,17 +4876,6 @@
       "norm_label": "rigorous structural and visual validation. checks: - shape, dimensions, and...",
       "source_file": "backend/refinement.py",
       "source_location": "L446"
-    },
-    {
-      "id": "backend_refinement_rationale_53",
-      "label": "Rigorous evaluation of refined image vs original sketch structure.",
-      "_origin": "ast",
-      "community": 6,
-      "community_name": "test_refinement.py",
-      "file_type": "rationale",
-      "norm_label": "rigorous evaluation of refined image vs original sketch structure.",
-      "source_file": "backend/refinement.py",
-      "source_location": "L53"
     },
     {
       "id": "tests_test_refinement_rationale_1",
@@ -4978,6 +4964,17 @@
       "norm_label": "creates a faint pencil sketch with paper background noise.",
       "source_file": "tests/test_refinement.py",
       "source_location": "L42"
+    },
+    {
+      "id": "tests_test_refinement_rationale_71",
+      "label": "Verifies that Llama structured output is converted into explicit conditioning\u2026",
+      "_origin": "ast",
+      "community": 6,
+      "community_name": "test_refinement.py",
+      "file_type": "rationale",
+      "norm_label": "verifies that llama structured output is converted into explicit conditioning...",
+      "source_file": "tests/test_refinement.py",
+      "source_location": "L71"
     },
     {
       "id": "colab_backend",
@@ -5431,178 +5428,13 @@
       "source_location": "L99"
     },
     {
-      "id": "stitch_sketch_to_3d_generator_screen_3d_viewport",
-      "label": "Interactive 3D GLB Viewport",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "interactive 3d glb viewport",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_community_explorations",
-      "label": "Community Explorations and Remix Hub",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "community explorations and remix hub",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_mesh_quality_target",
-      "label": "Target Quality Configuration",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "target quality configuration",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_neural_trace_pipeline",
-      "label": "Realtime Neural Trace and Reconstruction Engine",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "realtime neural trace and reconstruction engine",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_preprocessing_pipeline",
-      "label": "SDF and Image Preprocessing Pipeline",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "sdf and image preprocessing pipeline",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_sparks_balance_system",
-      "label": "Sparks Credit and Compute Economy",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "sparks credit and compute economy",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_vector_studio_canvas",
-      "label": "Hero Vector Studio Canvas",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "hero vector studio canvas",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_zephyr_3d_studio",
-      "label": "Zephyr 3D Pro Studio Application",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "zephyr 3d pro studio application",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_image",
-      "label": "Zephyr 3D Pro Studio UI Screenshot",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "image",
-      "norm_label": "zephyr 3d pro studio ui screenshot",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_screen_sketch_to_3d_workflow_rationale",
-      "label": "Instant 2D-to-3D Synthesis UI Design Rationale",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 11,
-      "community_name": "Zephyr3D Studio UI & Viewport",
-      "contributor": null,
-      "file_type": "rationale",
-      "norm_label": "instant 2d-to-3d synthesis ui design rationale",
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_code_touchhandler",
-      "label": "touchHandler",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 14,
-      "community_name": "Canvas Touch Input Controller",
-      "contributor": null,
-      "file_type": "code",
-      "norm_label": "touchhandler",
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
-      "source_location": null,
-      "source_url": null
-    },
-    {
       "id": "frontend_index_root_container",
       "label": "React DOM Mount Root",
       "_origin": "semantic",
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "react dom mount root",
@@ -5617,7 +5449,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "tailwind theme configuration",
@@ -5632,7 +5464,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "zephyr 3d web studio application",
@@ -5647,7 +5479,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "fastapi dependency",
@@ -5662,7 +5494,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "opencv-python-headless dependency",
@@ -5677,7 +5509,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "pillow dependency",
@@ -5692,7 +5524,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "scipy dependency",
@@ -5707,71 +5539,11 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "code",
       "norm_label": "trimesh dependency",
       "source_file": "requirements.txt",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_code_drawsampledrone",
-      "label": "drawSampleDroneSketch",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "code",
-      "norm_label": "drawsampledronesketch",
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_code_initstudio",
-      "label": "initStudio Canvas Controller",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "code",
-      "norm_label": "initstudio canvas controller",
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_code_studio_dashboard",
-      "label": "Zephyr3D Pro Studio UI Mockup",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "code",
-      "norm_label": "zephyr3d pro studio ui mockup",
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_code_viewport_card",
-      "label": "3D Viewport Model Card",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "code",
-      "norm_label": "3d viewport model card",
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
       "source_location": null,
       "source_url": null
     },
@@ -5782,7 +5554,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "colab gpu backend architecture",
@@ -5797,7 +5569,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "google gemini vision api sketch understanding",
@@ -5812,7 +5584,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "public tunnel (pyngrok / localtunnel)",
@@ -5827,7 +5599,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "ultra-hd 3d reconstruction (hunyuan3d-2 / trellis)",
@@ -5842,7 +5614,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "fast 3d reconstruction (triposr)",
@@ -5857,7 +5629,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "endpoint /api/analyze-sketch",
@@ -5872,7 +5644,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "endpoint /api/foreground-isolate",
@@ -5887,7 +5659,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "endpoint /api/generate-25d",
@@ -5902,7 +5674,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "endpoint /api/pipeline/full",
@@ -5917,7 +5689,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "endpoint /api/preprocess",
@@ -5932,7 +5704,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "endpoint /api/reconstruct",
@@ -5947,7 +5719,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "foreground isolation module",
@@ -5962,7 +5734,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "2.5d volumetric generation module",
@@ -5977,7 +5749,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "instantmesh 3d reconstruction pipeline",
@@ -5992,7 +5764,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "llama 3.2 vision semantic understanding",
@@ -6007,7 +5779,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "opencv preprocessing module",
@@ -6022,7 +5794,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "sketch2shape ai system",
@@ -6037,86 +5809,11 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "concept",
       "norm_label": "watertight 3d relief mesh generation",
       "source_file": "README.md",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_design_color_palette",
-      "label": "Phosphorescent Cyberpunk Color Palette",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "phosphorescent cyberpunk color palette",
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_design_component_specs",
-      "label": "Pill & Glass Component Specifications",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "pill & glass component specifications",
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_design_elevation_model",
-      "label": "Frosted Dark Glass Elevation Model",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "frosted dark glass elevation model",
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-      "label": "Obsidian Synth 3D Design Theme",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "obsidian synth 3d design theme",
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "source_url": null
-    },
-    {
-      "id": "stitch_sketch_to_3d_generator_design_typography_system",
-      "label": "Typography Pair System",
-      "_origin": "semantic",
-      "author": null,
-      "captured_at": null,
-      "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
-      "contributor": null,
-      "file_type": "concept",
-      "norm_label": "typography pair system",
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
       "source_location": null,
       "source_url": null
     },
@@ -6127,7 +5824,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "rationale",
       "norm_label": "gpu memory & vram management",
@@ -6142,7 +5839,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "rationale",
       "norm_label": "balloon inflation monocular depth estimation",
@@ -6157,7 +5854,7 @@
       "author": null,
       "captured_at": null,
       "community": 7,
-      "community_name": "Design Specifications & Colab Architecture",
+      "community_name": "2.5D Volumetric Generation Module",
       "contributor": null,
       "file_type": "rationale",
       "norm_label": "tangent-space surface normal map",
@@ -6198,18 +5895,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "dataclasses",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "hashlib",
-      "label": "hashlib",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "refinement.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "hashlib",
       "source_file": "",
       "type": "external"
     },
@@ -6346,6 +6031,30 @@
       "type": "external"
     },
     {
+      "id": "fastapi",
+      "label": "fastapi",
+      "_origin": "semantic",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "fastapi",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "hashlib",
+      "label": "hashlib",
+      "_origin": "semantic",
+      "community": 1,
+      "community_name": "preprocess_sketch",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "hashlib",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "fastapi_responses",
       "label": "fastapi_responses",
       "_origin": "semantic",
@@ -6382,18 +6091,6 @@
       "type": "external"
     },
     {
-      "id": "pytest",
-      "label": "pytest",
-      "_origin": "semantic",
-      "community": 20,
-      "community_name": "test_prompt_priority_and_studio_refinement.py",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "pytest",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "frontend_src_index",
       "label": "frontend_src_index",
       "_origin": "semantic",
@@ -6406,23 +6103,11 @@
       "type": "external"
     },
     {
-      "id": "fastapi",
-      "label": "fastapi",
-      "_origin": "semantic",
-      "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "fastapi",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "unittest_mock",
       "label": "unittest_mock",
       "_origin": "semantic",
       "community": 5,
-      "community_name": "analyze_sketch_with_llama_vision",
+      "community_name": "test_vision.py",
       "external": true,
       "file_type": "concept",
       "norm_label": "unittest_mock",
@@ -6546,6 +6231,18 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "uuid",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "pytest",
+      "label": "pytest",
+      "_origin": "semantic",
+      "community": 9,
+      "community_name": "conftest.py",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "pytest",
       "source_file": "",
       "type": "external"
     }
@@ -6752,7 +6449,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L601",
+      "source_location": "L590",
       "weight": 1.0
     },
     {
@@ -6764,7 +6461,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L609",
+      "source_location": "L598",
       "weight": 1.0
     },
     {
@@ -6776,7 +6473,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L610",
+      "source_location": "L599",
       "weight": 1.0
     },
     {
@@ -6788,7 +6485,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L616",
+      "source_location": "L605",
       "weight": 1.0
     },
     {
@@ -6800,7 +6497,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L619",
+      "source_location": "L608",
       "weight": 1.0
     },
     {
@@ -6812,7 +6509,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L628",
+      "source_location": "L617",
       "weight": 1.0
     },
     {
@@ -6824,7 +6521,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L648",
+      "source_location": "L637",
       "weight": 1.0
     },
     {
@@ -6836,7 +6533,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L664",
+      "source_location": "L653",
       "weight": 1.0
     },
     {
@@ -6848,7 +6545,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L691",
+      "source_location": "L680",
       "weight": 1.0
     },
     {
@@ -6860,7 +6557,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L411",
+      "source_location": "L400",
       "weight": 1.0
     },
     {
@@ -6872,7 +6569,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L414",
+      "source_location": "L403",
       "weight": 1.0
     },
     {
@@ -6884,7 +6581,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L489",
+      "source_location": "L478",
       "weight": 1.0
     },
     {
@@ -6896,7 +6593,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L578",
+      "source_location": "L567",
       "weight": 1.0
     },
     {
@@ -8348,7 +8045,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L94",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -8360,7 +8057,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L96",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -8372,7 +8069,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L128",
+      "source_location": "L114",
       "weight": 1.0
     },
     {
@@ -9584,7 +9281,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L594",
+      "source_location": "L583",
       "weight": 1.0
     },
     {
@@ -9596,7 +9293,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L393",
+      "source_location": "L382",
       "weight": 1.0
     },
     {
@@ -9608,7 +9305,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L466",
+      "source_location": "L455",
       "weight": 1.0
     },
     {
@@ -9620,7 +9317,7 @@
       "confidence_score": 1.0,
       "context": "generic_arg",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L466",
+      "source_location": "L455",
       "weight": 1.0
     },
     {
@@ -11552,7 +11249,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L123",
+      "source_location": "L109",
       "weight": 1.0
     },
     {
@@ -13736,7 +13433,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L376",
+      "source_location": "L365",
       "weight": 1.0
     },
     {
@@ -14120,7 +13817,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L91",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -14132,7 +13829,7 @@
       "confidence_score": 1.0,
       "context": "parameter_type",
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L121",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -14600,7 +14297,7 @@
       "confidence_score": 1.0,
       "context": "return_type",
       "source_file": "backend/generation_25d.py",
-      "source_location": "L393",
+      "source_location": "L382",
       "weight": 1.0
     },
     {
@@ -15234,7 +14931,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L376",
+      "source_location": "L365",
+      "weight": 1.0
+    },
+    {
+      "source": "backend_generation_25d",
+      "target": "backend_generation_25d_render_studio_shading",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/generation_25d.py",
+      "source_location": "L382",
       "weight": 1.0
     },
     {
@@ -15250,24 +14958,13 @@
     },
     {
       "source": "backend_generation_25d",
-      "target": "backend_generation_25d_render_studio_shading",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "backend/generation_25d.py",
-      "source_location": "L393",
-      "weight": 1.0
-    },
-    {
-      "source": "backend_generation_25d",
       "target": "backend_generation_25d_synthesize_gemini_volumetric_concept",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L466",
+      "source_location": "L455",
       "weight": 1.0
     },
     {
@@ -15289,7 +14986,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L594",
+      "source_location": "L583",
       "weight": 1.0
     },
     {
@@ -16664,7 +16361,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L121",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -16708,7 +16405,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L91",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -17790,14 +17487,25 @@
       "weight": 1.0
     },
     {
-      "source": "backend_generation_25d_rationale_377",
+      "source": "backend_generation_25d_rationale_366",
       "target": "backend_generation_25d_infer_dominant_sketch_color",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L377",
+      "source_location": "L366",
+      "weight": 1.0
+    },
+    {
+      "source": "backend_generation_25d_rationale_390",
+      "target": "backend_generation_25d_render_studio_shading",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/generation_25d.py",
+      "source_location": "L390",
       "weight": 1.0
     },
     {
@@ -17812,25 +17520,14 @@
       "weight": 1.0
     },
     {
-      "source": "backend_generation_25d_rationale_401",
-      "target": "backend_generation_25d_render_studio_shading",
-      "relation": "rationale_for",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "backend/generation_25d.py",
-      "source_location": "L401",
-      "weight": 1.0
-    },
-    {
-      "source": "backend_generation_25d_rationale_476",
+      "source": "backend_generation_25d_rationale_465",
       "target": "backend_generation_25d_synthesize_gemini_volumetric_concept",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L476",
+      "source_location": "L465",
       "weight": 1.0
     },
     {
@@ -17845,14 +17542,14 @@
       "weight": 1.0
     },
     {
-      "source": "backend_generation_25d_rationale_600",
+      "source": "backend_generation_25d_rationale_589",
       "target": "backend_generation_25d_generate_25d",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "backend/generation_25d.py",
-      "source_location": "L600",
+      "source_location": "L589",
       "weight": 1.0
     },
     {
@@ -18824,14 +18521,14 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_generation_25d_rationale_122",
+      "source": "tests_test_generation_25d_rationale_108",
       "target": "tests_test_generation_25d_test_synthesize_gemini_volumetric_concept_fallback",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L122",
+      "source_location": "L108",
       "weight": 1.0
     },
     {
@@ -18868,14 +18565,14 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_generation_25d_rationale_92",
+      "source": "tests_test_generation_25d_rationale_78",
       "target": "tests_test_generation_25d_test_generate_25d_end_to_end",
       "relation": "rationale_for",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_generation_25d.py",
-      "source_location": "L92",
+      "source_location": "L78",
       "weight": 1.0
     },
     {
@@ -19588,17 +19285,6 @@
       "weight": 0.8
     },
     {
-      "source": "stitch_sketch_to_3d_generator_code_initstudio",
-      "target": "stitch_sketch_to_3d_generator_code_drawsampledrone",
-      "relation": "calls",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
       "source": "readme_foreground_isolation_module",
       "target": "readme_generation_25d_module",
       "relation": "conceptually_related_to",
@@ -19639,72 +19325,6 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_neural_trace_pipeline",
-      "target": "stitch_sketch_to_3d_generator_screen_3d_viewport",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_neural_trace_pipeline",
-      "target": "stitch_sketch_to_3d_generator_screen_preprocessing_pipeline",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_preprocessing_pipeline",
-      "target": "stitch_sketch_to_3d_generator_screen_mesh_quality_target",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_vector_studio_canvas",
-      "target": "stitch_sketch_to_3d_generator_screen_neural_trace_pipeline",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_zephyr_3d_studio",
-      "target": "stitch_sketch_to_3d_generator_screen_sparks_balance_system",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_zephyr_3d_studio",
-      "target": "stitch_sketch_to_3d_generator_screen_vector_studio_canvas",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
       "source_location": null,
       "weight": 1.0
     },
@@ -19940,105 +19560,6 @@
       "weight": 1.0
     },
     {
-      "source": "stitch_sketch_to_3d_generator_code_studio_dashboard",
-      "target": "stitch_sketch_to_3d_generator_code_initstudio",
-      "relation": "references",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_code_studio_dashboard",
-      "target": "stitch_sketch_to_3d_generator_code_viewport_card",
-      "relation": "references",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-      "target": "stitch_sketch_to_3d_generator_design_color_palette",
-      "relation": "references",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-      "target": "stitch_sketch_to_3d_generator_design_component_specs",
-      "relation": "references",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-      "target": "stitch_sketch_to_3d_generator_design_elevation_model",
-      "relation": "references",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-      "target": "stitch_sketch_to_3d_generator_design_typography_system",
-      "relation": "references",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_image",
-      "target": "stitch_sketch_to_3d_generator_screen_zephyr_3d_studio",
-      "relation": "references",
-      "_origin": "semantic",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_3d_viewport",
-      "target": "stitch_sketch_to_3d_generator_screen_community_explorations",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "INFERRED",
-      "confidence_score": 0.85,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_sketch_to_3d_workflow_rationale",
-      "target": "stitch_sketch_to_3d_generator_screen_vector_studio_canvas",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "INFERRED",
-      "confidence_score": 0.85,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
       "source": "frontend_index_zephyr_3d_app",
       "target": "readme_sketch2shape_ai",
       "relation": "implements",
@@ -20090,39 +19611,6 @@
       "confidence": "INFERRED",
       "confidence_score": 0.85,
       "source_file": "colab_gemini_prompt.md",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_screen_sketch_to_3d_workflow_rationale",
-      "target": "stitch_sketch_to_3d_generator_screen_zephyr_3d_studio",
-      "relation": "conceptually_related_to",
-      "_origin": "semantic",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "stitch_sketch_to_3d_generator/screen.png",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "frontend_index_tailwind_theme_config",
-      "target": "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-      "relation": "implements",
-      "_origin": "semantic",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "frontend/index.html",
-      "source_location": null,
-      "weight": 1.0
-    },
-    {
-      "source": "stitch_sketch_to_3d_generator_code_studio_dashboard",
-      "target": "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-      "relation": "implements",
-      "_origin": "semantic",
-      "confidence": "INFERRED",
-      "confidence_score": 0.95,
-      "source_file": "stitch_sketch_to_3d_generator/code.html",
       "source_location": null,
       "weight": 1.0
     },
@@ -20189,21 +19677,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md"
-    },
-    {
-      "id": "hyperedge_obsidian_synth_design_system",
-      "label": "Obsidian Synth 3D Studio Architecture",
-      "nodes": [
-        "stitch_sketch_to_3d_generator_design_obsidian_synth_theme",
-        "stitch_sketch_to_3d_generator_code_studio_dashboard",
-        "frontend_index_tailwind_theme_config",
-        "frontend_index_zephyr_3d_app"
-      ],
-      "relation": "implement",
-      "confidence": "INFERRED",
-      "confidence_score": 0.85,
-      "source_file": "stitch_sketch_to_3d_generator/DESIGN.md"
     }
   ],
-  "built_at_commit": "04c8b06182aa73985d5633a134f569c1e255866b"
+  "built_at_commit": "1c2cf083be38c1686de79f317f1fc23630e4e5a2"
 }

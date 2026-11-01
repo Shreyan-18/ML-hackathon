@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 export default function VisionAnalysisCard({
   analysisData,
-  visionLoading = false,
   preprocessedData,
   previewUrl,
   isolationData,
@@ -30,38 +29,25 @@ export default function VisionAnalysisCard({
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[#00f59b] text-xl">neurology</span>
             <h3 className="font-display font-bold text-lg text-white capitalize">
-              {analysisData?.object_type || (visionLoading ? 'Analyzing Sketch Geometry...' : 'Gemini Vision Understanding')}
+              {analysisData?.object_type || 'Sketch Understanding'}
             </h3>
-            {analysisData?.category ? (
+            {analysisData?.category && (
               <span className="px-2.5 py-0.5 rounded-full bg-[#00f59b]/20 border border-[#00f59b]/40 text-[#00f59b] text-xs font-semibold">
                 {analysisData.category}
-              </span>
-            ) : !visionLoading && (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#272a2d] text-[#849588] text-xs font-medium">
-                Click 'Vision Analysis' to run
               </span>
             )}
           </div>
           <span className="text-xs text-[#849588] mt-1 block">
-            {analysisData ? (
-              <>
-                Viewpoint: <strong className="text-white capitalize">{analysisData?.view_type || 'Isometric / 3/4'}</strong> • Confidence:{' '}
-                <strong className="text-[#00f59b]">
-                  {`${(analysisData.confidence_score * 100).toFixed(0)}%`}
-                </strong>
-              </>
-            ) : visionLoading ? (
-              <span className="text-[#6ffbbe] animate-pulse">Running Gemini Vision multimodal reasoning...</span>
-            ) : (
-              <span>Extracts 3D primitives, view orientation, semantic hierarchy, and prompt conditioning.</span>
-            )}
+            Viewpoint: <strong className="text-white capitalize">{analysisData?.view_type || 'Isometric / 3/4'}</strong> • Confidence:{' '}
+            <strong className="text-[#00f59b]">
+              {analysisData ? `${(analysisData.confidence_score * 100).toFixed(0)}%` : '96%'}
+            </strong>
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] px-2.5 py-1 bg-[#111416] border border-[#272a2d] text-[#6ffbbe] rounded-md font-mono flex items-center gap-1.5">
-            {analysisData && <span className="w-2 h-2 rounded-full bg-[#00f59b] animate-pulse"></span>}
-            <span>{analysisData?.inference_backend || (visionLoading ? 'Gemini 3.5 Flash (Processing)' : 'Gemini 3.5 Flash Vision')}</span>
+          <span className="text-[11px] px-2.5 py-1 bg-[#111416] border border-[#272a2d] text-[#6ffbbe] rounded-md font-mono">
+            {analysisData?.inference_backend || 'Gemini 3.5 Flash Vision'}
           </span>
         </div>
       </div>
@@ -369,9 +355,7 @@ export default function VisionAnalysisCard({
         </h4>
         <p className="text-xs text-[#e1e2e5] leading-relaxed bg-[#0c0f11]/90 p-3 rounded-xl border border-[#272a2d]">
           {analysisData?.description ||
-            (visionLoading
-              ? 'Analyzing visual contours, perspective angles, and structural features with Gemini Vision...'
-              : 'Standby: Draw or upload a sketch above and click "Vision Analysis" to synthesize real-time semantic 3D reasoning.')}
+            'A conceptual multi-rotor sci-fi recon drone featuring an aerodynamic fuselage, dual turbine nacelles, front-mounted sensor dome, and quad landing struts.'}
         </p>
       </div>
 

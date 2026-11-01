@@ -271,31 +271,25 @@ def export_relief_3d_mesh(
     faces: List[Tuple[int, int, int]] = []
     n = resolution * resolution
 
-    # UV mapping coordinates in [0, 1] for top surface and bottom base
-    uvs: List[Tuple[float, float]] = []
-    for r in range(resolution):
-        for c in range(resolution):
-            uvs.append((float(c / (resolution - 1)), float(1.0 - (r / (resolution - 1)))))
-
-    # 3. Top surface triangular faces (counter-clockwise winding so normals point +Z towards camera & lights)
+    # 3. Top surface triangular faces
     for r in range(resolution - 1):
         for c in range(resolution - 1):
             i0 = r * resolution + c
             i1 = i0 + 1
             i2 = (r + 1) * resolution + c
             i3 = i2 + 1
-            faces.append((i0 + 1, i2 + 1, i1 + 1))
-            faces.append((i1 + 1, i2 + 1, i3 + 1))
+            faces.append((i0 + 1, i1 + 1, i2 + 1))
+            faces.append((i1 + 1, i3 + 1, i2 + 1))
 
-    # 4. Bottom base triangular faces (wind so normals point -Z away from camera)
+    # 4. Bottom base triangular faces (reverse winding)
     for r in range(resolution - 1):
         for c in range(resolution - 1):
             i0 = n + (r * resolution + c)
             i1 = i0 + 1
             i2 = n + ((r + 1) * resolution + c)
             i3 = i2 + 1
-            faces.append((i0 + 1, i1 + 1, i2 + 1))
-            faces.append((i1 + 1, i3 + 1, i2 + 1))
+            faces.append((i0 + 1, i2 + 1, i1 + 1))
+            faces.append((i1 + 1, i2 + 1, i3 + 1))
 
     # 5. Side perimeter skirts
     for c in range(resolution - 1):
@@ -351,13 +345,8 @@ def export_relief_3d_mesh(
         ]
         for vx, vy, vz in vertices:
             lines.append(f"v {vx:.5f} {vy:.5f} {vz:.5f}")
-        for u, v in uvs:
-            lines.append(f"vt {u:.5f} {v:.5f}")
         for f1, f2, f3 in faces:
-            if f1 <= len(uvs) and f2 <= len(uvs) and f3 <= len(uvs):
-                lines.append(f"f {f1}/{f1} {f2}/{f2} {f3}/{f3}")
-            else:
-                lines.append(f"f {f1} {f2} {f3}")
+            lines.append(f"f {f1} {f2} {f3}")
 
         out_p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 

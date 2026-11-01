@@ -2,6 +2,7 @@ import React from 'react';
 
 export default function Sidebar({ activeNav, setActiveNav, onUpgradeSparks, onGoLanding }) {
   const navItems = [
+    { id: 'landing', label: 'Overview / Home', icon: 'home', isLanding: true },
     { id: 'create', label: 'Create', icon: 'auto_fix_high' },
     { id: 'sketch-pad', label: 'Sketch Pad', icon: 'draw' },
     { id: 'gallery', label: 'Gallery & Models', icon: 'view_in_ar' },
@@ -84,13 +85,7 @@ export default function Sidebar({ activeNav, setActiveNav, onUpgradeSparks, onGo
             return (
               <button
                 key={item.id}
-                onClick={() => {
-                  if (item.isLanding && onGoLanding) {
-                    onGoLanding();
-                  } else {
-                    setActiveNav(item.id);
-                  }
-                }}
+                onClick={() => setActiveNav(item.id)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left ${
                   isActive
                     ? 'bg-[#272a2d] text-[#6ffbbe] shadow-[inset_0_0_12px_rgba(0,245,155,0.15)] relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:bg-[#00f59b] before:rounded-full'

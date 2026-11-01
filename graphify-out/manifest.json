@@ -48,8 +48,8 @@
     "semantic_hash": "7cac0d2f284a69d55f4549f776e534f6"
   },
   "README.md": {
-    "mtime": 1793446633.8465142,
-    "seen": 1793476887.1844501,
+    "mtime": 1793521056.7082326,
+    "seen": 1793521295.323305,
     "ast_hash": "d0b30938fa6465cb0d8446156af7277d",
     "semantic_hash": "d0b30938fa6465cb0d8446156af7277d"
   },
@@ -108,9 +108,9 @@
     "semantic_hash": "526bfd6ab80e7b8ff0252d3056931f96"
   },
   "frontend/src/components/Header.jsx": {
-    "mtime": 1793507804.8261974,
-    "seen": 1793508332.445039,
-    "ast_hash": "1a02f9c61626b8c3e9fc0152a38f8a9e",
+    "mtime": 1793521056.6762347,
+    "seen": 1793521295.323296,
+    "ast_hash": "dd1d8cb17b87434f646e28359b968876",
     "semantic_hash": ""
   },
   "frontend/src/components/ShowcaseGallery.jsx": {
@@ -120,27 +120,27 @@
     "semantic_hash": "94c3aaa4cc8a6e661b85fbdfd9c0f905"
   },
   "frontend/src/components/Sidebar.jsx": {
-    "mtime": 1793507823.6888843,
-    "seen": 1793508332.445041,
-    "ast_hash": "83bca2beeebde0c73416e7d618ab82c0",
+    "mtime": 1793521056.713249,
+    "seen": 1793521295.323298,
+    "ast_hash": "87f4d4440d2c51244139b2f8deee1baf",
     "semantic_hash": ""
   },
   "frontend/src/components/VectorStudio.jsx": {
-    "mtime": 1793512598.8499277,
-    "seen": 1793512719.1523001,
-    "ast_hash": "555c73520604634ae0bb040ce8a65fb2",
+    "mtime": 1793521056.6826615,
+    "seen": 1793521295.323298,
+    "ast_hash": "b9faa43829105d35a99164c6c5ed9caa",
     "semantic_hash": ""
   },
   "frontend/src/components/Viewport3D.jsx": {
-    "mtime": 1793512658.468691,
-    "seen": 1793512719.1523001,
-    "ast_hash": "21231ec7601f22196c8dcc16041f9a50",
+    "mtime": 1793521056.688485,
+    "seen": 1793521295.3232992,
+    "ast_hash": "ba7c229e9b4a8ec0080f56eeef86a28a",
     "semantic_hash": ""
   },
   "frontend/src/components/VisionAnalysisCard.jsx": {
-    "mtime": 1793512639.4723155,
-    "seen": 1793512719.152301,
-    "ast_hash": "8ace37f722acdec9c955c260b3b07c86",
+    "mtime": 1793521056.693256,
+    "seen": 1793521295.3232992,
+    "ast_hash": "7bab6d5094137543e4606567157ca799",
     "semantic_hash": ""
   },
   "backend/foreground_isolation.py": {
@@ -150,9 +150,9 @@
     "semantic_hash": ""
   },
   "backend/generation_25d.py": {
-    "mtime": 1793512471.4278243,
-    "seen": 1793512719.152292,
-    "ast_hash": "9a229ecb56c453b3e3ee52dbb9ad797c",
+    "mtime": 1793521056.698444,
+    "seen": 1793521295.323288,
+    "ast_hash": "2b94a80d3179a588300794152645bbfc",
     "semantic_hash": ""
   },
   "tests/test_foreground_isolation.py": {
@@ -162,9 +162,9 @@
     "semantic_hash": "0c266b6a35f967e60b819332752d6c74"
   },
   "tests/test_generation_25d.py": {
-    "mtime": 1793512696.0695953,
-    "seen": 1793512719.1523042,
-    "ast_hash": "428f31fb8558ddbb3f7adbc12766b9a3",
+    "mtime": 1793521056.7033563,
+    "seen": 1793521295.3233018,
+    "ast_hash": "7ea1f18d7b0b66cb99b2c4209ebd7910",
     "semantic_hash": ""
   },
   "backend/refinement.py": {
@@ -178,24 +178,6 @@
     "seen": 1793476887.184448,
     "ast_hash": "99352ace4bcee65b3705d58a0c34a922",
     "semantic_hash": "99352ace4bcee65b3705d58a0c34a922"
-  },
-  "stitch_sketch_to_3d_generator/DESIGN.md": {
-    "mtime": 1793461515.0037897,
-    "seen": 1793476887.184452,
-    "ast_hash": "39982c8b34feca44b9b6c4e3ee51d0e3",
-    "semantic_hash": "39982c8b34feca44b9b6c4e3ee51d0e3"
-  },
-  "stitch_sketch_to_3d_generator/code.html": {
-    "mtime": 1793461515.004091,
-    "seen": 1793476887.184453,
-    "ast_hash": "c4a621178cb0bff4744eb2feb3944dff",
-    "semantic_hash": "c4a621178cb0bff4744eb2feb3944dff"
-  },
-  "stitch_sketch_to_3d_generator/screen.png": {
-    "mtime": 1793461515.0279546,
-    "seen": 1793463335.160067,
-    "ast_hash": "388f9fad1ffc6b4042d73629d160eaf5",
-    "semantic_hash": ""
   },
   "colab_backend.py": {
     "mtime": 1793477249.5941226,
@@ -228,9 +210,9 @@
     "semantic_hash": ""
   },
   "frontend/src/StudioApp.jsx": {
-    "mtime": 1793512566.8246486,
-    "seen": 1793512719.152297,
-    "ast_hash": "c6eda02e767073df49200b97d9f7a136",
+    "mtime": 1793521056.7179458,
+    "seen": 1793521295.3232949,
+    "ast_hash": "bb8d1ce59f8639017629e867ac064b27",
     "semantic_hash": ""
   },
   "frontend/src/components/LandingPage.jsx": {
@@ -243,6 +225,12 @@
     "mtime": 1793504787.5810597,
     "seen": 1793504870.8475158,
     "ast_hash": "88d858910e6ef1f4819da9e320d15496",
+    "semantic_hash": ""
+  },
+  "frontend/postcss.config.js": {
+    "mtime": 1793521126.855608,
+    "seen": 1793521295.323293,
+    "ast_hash": "e7e903292711dd5aeb5a8c50deb849a6",
     "semantic_hash": ""
   }
 }
